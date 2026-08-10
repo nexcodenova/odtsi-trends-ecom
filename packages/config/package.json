@@ -1,0 +1,10 @@
+{
+  "name": "@odtsi/config",
+  "version": "0.0.0",
+  "private": true,
+  "main": "index.js",
+  "exports": {
+    "./tailwind-theme": "./tailwind-theme.ts",
+    "./tsconfig.base.json": "./tsconfig.base.json"
+  }
+}
