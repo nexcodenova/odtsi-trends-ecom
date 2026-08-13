@@ -13,7 +13,6 @@
     "@odtsi/exiuscart-client": "workspace:*",
     "@odtsi/ui": "workspace:*",
     "@odtsi/utils": "workspace:*",
-    "isomorphic-dompurify": "^3.22.0",
     "lucide-react": "^0.460.0",
     "next": "^15.0.0",
     "react": "^19.0.0",
