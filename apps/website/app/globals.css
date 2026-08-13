@@ -6,3 +6,19 @@ body {
   color: #16161a;
   overflow-x: hidden;
 }
+
+/* Gentle up/down drift — used to draw the eye to a real discount without
+   the jarring snap of Tailwind's built-in animate-bounce. */
+@keyframes float-y {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.animate-float {
+  animation: float-y 2.2s ease-in-out infinite;
+}

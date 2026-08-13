@@ -1,19 +1,35 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ShieldCheck, Truck, RotateCcw } from "lucide-react";
-import { getProduct } from "@odtsi/exiuscart-client";
+import { getProduct, getReviews, type ProductReview } from "@odtsi/exiuscart-client";
 import { Price } from "@/components/shared/price";
 import { ProductGallery } from "@/components/product/product-gallery";
 import { FeatureHighlights } from "@/components/product/feature-highlights";
 import { AddToCartSection } from "@/components/product/add-to-cart-section";
+import { PackSelector } from "@/components/product/pack-selector";
 import { BundleOfferSection } from "@/components/product/bundle-offer-section";
-import { WhatCustomersSay } from "@/components/product/what-customers-say";
-import { ProductDescription } from "@/components/product/product-description";
+import { ProductVideos } from "@/components/product/product-videos";
+import { TrustSignals } from "@/components/product/trust-signals";
+import { DescriptionText } from "@/components/product/description-text";
+import { DescriptionImages } from "@/components/product/description-images";
+import { ReviewsSection } from "@/components/product/reviews-section";
 import { SecureCheckoutStrip } from "@/components/product/secure-checkout-strip";
+import { parseProductDescription } from "@/lib/parse-product-description";
+import { getSession } from "@/lib/session";
+
+async function loadReviews(slug: string): Promise<ProductReview[]> {
+  try {
+    return await getReviews(slug);
+  } catch {
+    // ExiusCart's reviews endpoint isn't live yet — honest empty state,
+    // not fake reviews.
+    return [];
+  }
+}
 
 const BENEFITS = [
   { icon: ShieldCheck, label: "Secure checkout" },
-  { icon: Truck, label: "Fast, tracked delivery" },
+  { icon: Truck, label: "Fast, Free & Tracked Delivery" },
   { icon: RotateCcw, label: "30-Day Money Back" },
 ];
 
@@ -38,6 +54,12 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   const discountBadge = hasDiscount
     ? `-${Math.round((1 - product.price / product.compareAtPrice!) * 100)}% Today`
     : undefined;
+  const hasVideoContent = product.videos.length > 0 || product.testimonials.length > 0;
+  const hasTiers = product.quantityTiers.length > 0;
+  const { textHtml, images: descriptionImages } = product.description
+    ? parseProductDescription(product.description)
+    : { textHtml: "", images: [] };
+  const [reviews, session] = await Promise.all([loadReviews(slug), getSession()]);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-5 lg:px-8">
@@ -54,12 +76,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
       <div className="mt-4 grid grid-cols-1 gap-10 lg:grid-cols-2">
         <div>
-          <ProductGallery
-            images={galleryImages}
-            videos={product.videos}
-            productName={product.name}
-            badge={discountBadge}
-          />
+          <ProductGallery images={galleryImages} productName={product.name} badge={discountBadge} />
 
           {product.specs.length > 0 && <FeatureHighlights specs={product.specs} />}
         </div>
@@ -72,6 +89,8 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             </div>
           )}
 
+          <TrustSignals viewCount={product.viewCount} unitsSold={product.unitsSold} />
+
           <h1 className="mt-2 text-[27px] font-extrabold leading-tight tracking-tight text-[#16161A] sm:text-[32px]">
             {product.name}
           </h1>
@@ -83,7 +102,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             )}
             <Price amount={product.price} className="text-[30px] font-extrabold text-[#16161A]" />
             {hasDiscount && (
-              <span className="rounded-full bg-[#F6F5F3] px-3 py-1 text-[11px] font-extrabold text-action">
+              <span className="animate-float rounded-full bg-action px-3 py-1 text-xs font-extrabold text-action-ink shadow-[0_4px_12px_-4px_rgba(242,183,5,0.6)]">
                 Save <Price amount={savings} />
               </span>
             )}
@@ -93,12 +112,14 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             {product.inStock ? "In Stock — Order Now Before It's Gone" : "Out of Stock"}
           </p>
 
-          <div className="mt-5 flex flex-wrap gap-x-6 gap-y-3 border-y border-black/5 py-4">
+          <div className="mt-5 grid grid-cols-3 gap-3 border-y border-black/5 py-5">
             {BENEFITS.map(({ icon: Icon, label }) => (
-              <span key={label} className="flex items-center gap-1.5 text-xs font-semibold text-[#4A4844]">
-                <Icon size={16} className="text-action" />
-                {label}
-              </span>
+              <div key={label} className="flex flex-col items-center gap-2 text-center">
+                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary-light text-primary">
+                  <Icon size={22} />
+                </span>
+                <span className="text-sm font-extrabold leading-tight text-[#16161A]">{label}</span>
+              </div>
             ))}
           </div>
 
@@ -110,17 +131,44 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         </div>
       </div>
 
-      <div className="mt-10 grid grid-cols-1 gap-10 border-t border-black/5 pt-8 lg:grid-cols-2">
+      {hasTiers && (
+        <div className="mt-10 border-t border-black/5 pt-8">
+          <PackSelector product={product} />
+        </div>
+      )}
+
+      <div className="mt-10 border-t border-black/5 pt-8">
         {product.description && (
-          <div>
-            <h2 className="text-xs font-extrabold uppercase tracking-wide text-[#8B8880]">Description</h2>
+          <div
+            className={`grid grid-cols-1 gap-10 ${descriptionImages.length > 0 ? "lg:grid-cols-2" : ""}`}
+          >
+            <div>
+              <h2 className="text-xs font-extrabold uppercase tracking-wide text-[#8B8880]">Description</h2>
+              <div className="mt-3">
+                <DescriptionText html={textHtml} />
+              </div>
+            </div>
+
+            {descriptionImages.length > 0 && (
+              <div>
+                <DescriptionImages images={descriptionImages} />
+              </div>
+            )}
+          </div>
+        )}
+
+        {hasVideoContent && (
+          <div className={product.description ? "mt-10" : ""}>
+            <h2 className="text-xs font-extrabold uppercase tracking-wide text-[#8B8880]">Videos</h2>
             <div className="mt-3">
-              <ProductDescription html={product.description} />
+              <ProductVideos videos={product.videos} testimonials={product.testimonials} />
             </div>
           </div>
         )}
 
-        <WhatCustomersSay testimonials={product.testimonials} />
+        <div className={product.description || hasVideoContent ? "mt-10" : ""}>
+          <ReviewsSection slug={product.slug} reviews={reviews} isLoggedIn={session !== null} />
+        </div>
       </div>
     </div>
   );

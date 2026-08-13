@@ -40,6 +40,10 @@ interface RawProduct {
   tags: string[];
   category_id: number | null;
   custom_fields: Record<string, unknown>;
+  // Not live on ExiusCart's side yet — optional so mapping stays safe
+  // whether or not the field is present in the response.
+  view_count?: number;
+  units_sold?: number;
 }
 
 function mapQuantityTiers(raw: RawQuantityTier[] | undefined): QuantityTier[] {
@@ -103,6 +107,10 @@ function mapProduct(raw: RawProduct): Product {
     reviewCount: null,
     specs: [],
     testimonials: [],
+    // Real counters, straight through — null (not 0) when ExiusCart hasn't
+    // sent the field at all, so "0" is never confused with "not available".
+    viewCount: raw.view_count ?? null,
+    unitsSold: raw.units_sold ?? null,
   };
 }
 

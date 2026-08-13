@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { signIn } from "@odtsi/exiuscart-client";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
@@ -13,14 +14,21 @@ export default function LoginPage() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setStatus("loading");
-    try {
-      await signIn({ email, password });
-      // TODO: store the returned token/customer once accounts are live and redirect home.
-    } catch {
-      // ExiusCart's /auth/login endpoint isn't live yet — honest state, not a fake success.
-      setErrorMessage("Accounts aren't connected yet — check back soon.");
-      setStatus("error");
+    // Goes through our own /api/auth/login route, not signIn() directly —
+    // that's the only place the real token gets set as an httpOnly cookie.
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    if (res.ok) {
+      router.push("/wallet");
+      router.refresh();
+      return;
     }
+    const data = await res.json().catch(() => null);
+    setErrorMessage(data?.error ?? "Something went wrong — try again.");
+    setStatus("error");
   }
 
   return (

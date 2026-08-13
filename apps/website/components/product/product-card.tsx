@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, type MouseEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ShoppingCart, Check, Gift } from "lucide-react";
+import { ShoppingCart, Check, Gift, Eye, Heart } from "lucide-react";
 import type { Product, QuantityTier } from "@odtsi/exiuscart-client";
 import { Price } from "@/components/shared/price";
 import { addToCart } from "@/lib/cart";
+import { isInWishlist, toggleWishlist } from "@/lib/wishlist";
+import { notifyAdded } from "@/lib/notify";
 
 interface ProductCardProps {
   product: Product;
@@ -27,18 +29,41 @@ function bestTierDeal(product: Product): { tier: QuantityTier; savings: number }
 
 export function ProductCard({ product }: ProductCardProps) {
   const [justAdded, setJustAdded] = useState(false);
+  // Starts false on the server (no localStorage there) and syncs on mount.
+  const [saved, setSaved] = useState(false);
   const hasDiscount = product.compareAtPrice !== null && product.compareAtPrice > product.price;
   const discountPct = hasDiscount ? Math.round((1 - product.price / product.compareAtPrice!) * 100) : 0;
   const deal = bestTierDeal(product);
 
+  useEffect(() => {
+    setSaved(isInWishlist(product.id));
+  }, [product.id]);
+
   function handleAdd() {
     addToCart({ productId: product.id, slug: product.slug, name: product.name, price: product.price, imageUrl: product.imageUrl });
+    notifyAdded({ type: "cart", name: product.name, imageUrl: product.imageUrl, price: product.price });
     setJustAdded(true);
     setTimeout(() => setJustAdded(false), 1500);
   }
 
+  function handleWishlist(e: MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    const nowSaved = toggleWishlist({
+      productId: product.id,
+      slug: product.slug,
+      name: product.name,
+      price: product.price,
+      imageUrl: product.imageUrl,
+    });
+    setSaved(nowSaved);
+    if (nowSaved) {
+      notifyAdded({ type: "wishlist", name: product.name, imageUrl: product.imageUrl, price: product.price });
+    }
+  }
+
   return (
-    <div className="rounded-2xl p-3">
+    <div className="flex h-full flex-col rounded-2xl p-3">
       <Link href={`/product/${product.slug}`} className="group block">
         <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-primary-light">
           {product.imageUrl ? (
@@ -54,6 +79,18 @@ export function ProductCard({ product }: ProductCardProps) {
               Out of stock
             </span>
           )}
+
+          <button
+            type="button"
+            onClick={handleWishlist}
+            aria-label={saved ? "Remove from wishlist" : "Add to wishlist"}
+            aria-pressed={saved}
+            className={`absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full shadow-sm transition ${
+              saved ? "bg-white text-action" : "bg-white/90 text-[#716D67] hover:text-action"
+            }`}
+          >
+            <Heart size={16} className={saved ? "fill-action" : ""} />
+          </button>
         </div>
 
         <p className="mt-3 line-clamp-2 text-sm font-semibold leading-snug text-[#16161A]">{product.name}</p>
@@ -65,6 +102,13 @@ export function ProductCard({ product }: ProductCardProps) {
           </span>
           {product.rating !== null ? `${product.rating.toFixed(1)} (${product.reviewCount ?? 0})` : "No reviews yet"}
         </div>
+
+        {product.viewCount !== null && (
+          <div className="mt-1 flex items-center gap-1.5 text-xs text-[#8B8880]">
+            <Eye size={13} />
+            {product.viewCount.toLocaleString()} views
+          </div>
+        )}
 
         <p className={`mt-1 text-sm font-bold ${product.inStock ? "text-status" : "text-[#B9412E]"}`}>
           {!product.inStock
@@ -93,6 +137,8 @@ export function ProductCard({ product }: ProductCardProps) {
           </p>
         )}
       </Link>
+
+      <div className="flex-1" />
 
       <button
         type="button"

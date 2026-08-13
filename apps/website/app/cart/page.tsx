@@ -38,7 +38,10 @@ export default function CartPage() {
 
       <div className="mt-6 flex flex-col gap-4">
         {items.map((item) => (
-          <div key={item.productId} className="flex items-center gap-4 rounded-2xl border border-black/10 p-4">
+          <div
+            key={`${item.productId}-${item.variantId ?? "base"}`}
+            className="flex items-center gap-4 rounded-2xl border border-black/10 p-4"
+          >
             <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl bg-primary-light">
               {item.imageUrl ? <Image src={item.imageUrl} alt={item.name} fill className="object-cover" /> : null}
             </div>
@@ -48,13 +51,14 @@ export default function CartPage() {
                 {item.name}
               </Link>
               <p className="mt-1 text-sm font-extrabold text-primary">{price(item.price)}</p>
+              {item.step && item.step > 1 && <p className="mt-0.5 text-xs text-[#8B8880]">Pack of {item.step}</p>}
             </div>
 
             <div className="flex items-center rounded-xl border border-black/10">
               <button
                 type="button"
-                onClick={() => updateQuantity(item.productId, item.quantity - 1)}
-                aria-label="Decrease quantity"
+                onClick={() => updateQuantity(item.productId, item.quantity - (item.step ?? 1), item.variantId)}
+                aria-label={item.step && item.step > 1 ? `Remove one pack of ${item.step}` : "Decrease quantity"}
                 className="flex h-10 w-9 items-center justify-center text-[#716D67] hover:text-primary"
               >
                 <Minus size={14} />
@@ -62,8 +66,8 @@ export default function CartPage() {
               <span className="w-7 text-center text-sm font-bold text-[#16161A]">{item.quantity}</span>
               <button
                 type="button"
-                onClick={() => updateQuantity(item.productId, item.quantity + 1)}
-                aria-label="Increase quantity"
+                onClick={() => updateQuantity(item.productId, item.quantity + (item.step ?? 1), item.variantId)}
+                aria-label={item.step && item.step > 1 ? `Add one more pack of ${item.step}` : "Increase quantity"}
                 className="flex h-10 w-9 items-center justify-center text-[#716D67] hover:text-primary"
               >
                 <Plus size={14} />
@@ -72,7 +76,7 @@ export default function CartPage() {
 
             <button
               type="button"
-              onClick={() => removeFromCart(item.productId)}
+              onClick={() => removeFromCart(item.productId, item.variantId)}
               aria-label="Remove item"
               className="text-[#8B8880] hover:text-red-600"
             >

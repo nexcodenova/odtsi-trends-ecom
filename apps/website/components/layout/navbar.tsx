@@ -6,6 +6,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { Heart, Menu, Search, ShoppingCart, User, ChevronDown, Flame, Tag, Layers, Gift, Newspaper, Wallet, Brain } from "lucide-react";
 import type { Category } from "@odtsi/exiuscart-client";
+import { useCart } from "@/hooks/use-cart";
+import { useWishlist } from "@/hooks/use-wishlist";
 
 const QUICK_LINKS = [
   { label: "Trending Now", href: "/collection/trending", icon: Flame },
@@ -46,20 +48,29 @@ function NavIconLink({
   href,
   label,
   className = "",
+  count,
   children,
 }: {
   href: string;
   label: string;
   className?: string;
+  count?: number;
   children: ReactNode;
 }) {
   return (
     <Link
       href={href}
-      className={`flex flex-col items-center gap-0.5 text-white/90 transition-colors hover:text-white ${className}`}
+      className={`relative flex flex-col items-center gap-0.5 text-white/90 transition-colors hover:text-white ${className}`}
     >
-      {children}
-      <span className="text-[10px] font-semibold leading-none">{label}</span>
+      <span className="relative">
+        {children}
+        {!!count && count > 0 && (
+          <span className="absolute -right-2 -top-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-action px-1 text-[10px] font-extrabold leading-none text-action-ink">
+            {count > 99 ? "99+" : count}
+          </span>
+        )}
+      </span>
+      <span className="text-xs font-semibold leading-none">{label}</span>
     </Link>
   );
 }
@@ -163,6 +174,9 @@ function CategoriesDropdown({ categories }: { categories: Category[] }) {
 
 export function Navbar({ categories }: { categories: Category[] }) {
   const row2Visible = useRow2Visible();
+  const { items: cartItems } = useCart();
+  const { items: wishlistItems } = useWishlist();
+  const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
     <header className="sticky top-0 z-50 bg-primary shadow-sm">
@@ -199,7 +213,7 @@ export function Navbar({ categories }: { categories: Category[] }) {
           <NavIconLink href="/wallet" label="Wallet" className="hidden sm:flex">
             <Wallet size={24} />
           </NavIconLink>
-          <NavIconLink href="/wishlist" label="Wishlist" className="hidden sm:flex">
+          <NavIconLink href="/wishlist" label="Wishlist" className="hidden sm:flex" count={wishlistItems.length}>
             <Heart size={24} />
           </NavIconLink>
           {/* Deliberately not the small stacked icon+caption style the rest
@@ -211,7 +225,7 @@ export function Navbar({ categories }: { categories: Category[] }) {
             <Brain size={22} className="animate-pulse" />
             <span className="text-sm font-extrabold">Need to Talk</span>
           </Link>
-          <NavIconLink href="/cart" label="Cart" className="ml-2 sm:ml-5">
+          <NavIconLink href="/cart" label="Cart" className="ml-2 sm:ml-5" count={cartCount}>
             <ShoppingCart size={22} className="sm:hidden" />
             <ShoppingCart size={24} className="hidden sm:block" />
           </NavIconLink>

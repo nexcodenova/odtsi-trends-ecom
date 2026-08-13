@@ -12,6 +12,11 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "**.alicdn.com" },
       { protocol: "https", hostname: "**.cjdropshipping.com" },
       { protocol: "https", hostname: "**.r2.dev" },
+      // Video thumbnails from the new `videos` field (YouTube/TikTok).
+      { protocol: "https", hostname: "**.ytimg.com" },
+      { protocol: "https", hostname: "img.youtube.com" },
+      { protocol: "https", hostname: "**.tiktokcdn.com" },
+      { protocol: "https", hostname: "**.tiktokcdn-us.com" },
     ],
   },
 };

@@ -1,1 +1,1 @@
-export { formatCurrency } from "./format-currency";
+export { formatCurrency, formatCurrencyParts, type CurrencyParts } from "./format-currency";

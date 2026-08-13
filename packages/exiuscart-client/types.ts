@@ -49,6 +49,14 @@ export interface ProductSpec {
   label: string;
 }
 
+export interface ProductReview {
+  id: string;
+  customerName: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+}
+
 export interface ProductTestimonial {
   id: string;
   customerName: string;
@@ -100,6 +108,10 @@ export interface Product {
   specs: ProductSpec[];
   // Real customer testimonial videos only — empty until they exist.
   testimonials: ProductTestimonial[];
+  // Real counters only, straight from ExiusCart — null until those fields
+  // exist there. Never estimated, multiplied, or padded on this side.
+  viewCount: number | null;
+  unitsSold: number | null;
 }
 
 export interface CartItem {
