@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export interface HeroSlide {
   imageUrl: string;
@@ -45,7 +44,7 @@ export function HeroCarousel({ slides, intervalMs = 3000 }: HeroCarouselProps) {
   }
 
   return (
-    <section className="relative mx-4 mt-4 aspect-[3/2] overflow-hidden rounded-3xl sm:mx-5 sm:mt-5 sm:aspect-[3/1]">
+    <section className="relative mx-4 mt-3 aspect-[3/2] overflow-hidden rounded-3xl sm:mx-5 sm:mt-4 sm:aspect-[4/1]">
       {slides.map((slide, i) => (
         <div
           key={slide.imageUrl}
@@ -99,23 +98,6 @@ export function HeroCarousel({ slides, intervalMs = 3000 }: HeroCarouselProps) {
 
       {slides.length > 1 && (
         <>
-          <button
-            type="button"
-            onClick={() => goTo(active - 1)}
-            aria-label="Previous slide"
-            className="absolute left-3 top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 text-primary shadow sm:left-5 sm:h-11 sm:w-11"
-          >
-            <ChevronLeft size={20} />
-          </button>
-          <button
-            type="button"
-            onClick={() => goTo(active + 1)}
-            aria-label="Next slide"
-            className="absolute right-3 top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 text-primary shadow sm:right-5 sm:h-11 sm:w-11"
-          >
-            <ChevronRight size={20} />
-          </button>
-
           <div className="absolute inset-x-0 bottom-4 z-10 flex justify-center gap-2 sm:bottom-5">
             {slides.map((slide, i) => (
               <button

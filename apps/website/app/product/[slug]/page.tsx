@@ -10,8 +10,7 @@ import { PackSelector } from "@/components/product/pack-selector";
 import { BundleOfferSection } from "@/components/product/bundle-offer-section";
 import { ProductVideos } from "@/components/product/product-videos";
 import { TrustSignals } from "@/components/product/trust-signals";
-import { DescriptionText } from "@/components/product/description-text";
-import { DescriptionImages } from "@/components/product/description-images";
+import { DescriptionSection } from "@/components/product/description-section";
 import { ReviewsSection } from "@/components/product/reviews-section";
 import { SecureCheckoutStrip } from "@/components/product/secure-checkout-strip";
 import { parseProductDescription } from "@/lib/parse-product-description";
@@ -139,36 +138,26 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
       <div className="mt-10 border-t border-black/5 pt-8">
         {product.description && (
-          <div
-            className={`grid grid-cols-1 gap-10 ${descriptionImages.length > 0 ? "lg:grid-cols-2" : ""}`}
-          >
-            <div>
-              <h2 className="text-xs font-extrabold uppercase tracking-wide text-[#8B8880]">Description</h2>
-              <div className="mt-3">
-                <DescriptionText html={textHtml} />
-              </div>
+          <div>
+            <h2 className="text-xs font-extrabold uppercase tracking-wide text-[#8B8880]">Description</h2>
+            <div className="mt-3">
+              <DescriptionSection textHtml={textHtml} images={descriptionImages} />
             </div>
-
-            {descriptionImages.length > 0 && (
-              <div>
-                <DescriptionImages images={descriptionImages} />
-              </div>
-            )}
           </div>
         )}
 
+        <div className={product.description ? "mt-10" : ""}>
+          <ReviewsSection slug={product.slug} reviews={reviews} isLoggedIn={session !== null} />
+        </div>
+
         {hasVideoContent && (
-          <div className={product.description ? "mt-10" : ""}>
+          <div className="mt-10">
             <h2 className="text-xs font-extrabold uppercase tracking-wide text-[#8B8880]">Videos</h2>
             <div className="mt-3">
               <ProductVideos videos={product.videos} testimonials={product.testimonials} />
             </div>
           </div>
         )}
-
-        <div className={product.description || hasVideoContent ? "mt-10" : ""}>
-          <ReviewsSection slug={product.slug} reviews={reviews} isLoggedIn={session !== null} />
-        </div>
       </div>
     </div>
   );

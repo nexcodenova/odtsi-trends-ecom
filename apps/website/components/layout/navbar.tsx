@@ -181,7 +181,7 @@ export function Navbar({ categories }: { categories: Category[] }) {
   return (
     <header className="sticky top-0 z-50 bg-primary shadow-sm">
       {/* Row 1 — mobile: menu, logo, cart, account. Desktop: full bar with search + currency + icons. Always visible. */}
-      <div className="flex items-center gap-4 bg-primary px-4 py-3 sm:gap-5 sm:px-5 sm:py-4">
+      <div className="flex items-center gap-4 bg-primary px-4 py-3 sm:gap-5 sm:px-[20px] sm:py-4">
         <button type="button" aria-label="Open menu" className="text-white sm:hidden">
           <Menu size={24} />
         </button>
@@ -261,7 +261,7 @@ export function Navbar({ categories }: { categories: Category[] }) {
           row2Visible ? "max-h-16 sm:max-h-[68px]" : "max-h-0"
         }`}
       >
-        <div className="flex items-center gap-6 overflow-x-auto bg-[#F6F5F3] px-4 py-3 [scrollbar-width:none] sm:px-5 sm:py-3.5 [&::-webkit-scrollbar]:hidden">
+        <div className="flex items-center gap-6 overflow-x-auto bg-[#F6F5F3] px-4 py-3 [scrollbar-width:none] sm:px-[20px] sm:py-3.5 [&::-webkit-scrollbar]:hidden">
             <CategoriesDropdown categories={categories} />
 
             <div className="flex flex-1 items-center justify-between gap-6">

@@ -59,23 +59,23 @@ export function CategoryGrid({ categories: allCategories }: CategoryGridProps) {
   }
 
   return (
-    <section className="relative px-4 py-6 sm:px-5 sm:py-8">
+    <section className="relative px-4 py-4 sm:px-5 sm:py-5">
       <div
-        className={`grid gap-x-4 gap-y-6 ${totalPages > 1 ? "sm:pr-14" : ""}`}
+        className={`grid gap-x-3 gap-y-4 ${totalPages > 1 ? "sm:pr-14" : ""}`}
         style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gridTemplateRows: `repeat(${rows}, auto)` }}
       >
         {visible.map((category) => (
           <Link
             key={category.slug}
             href={`/category/${category.slug}`}
-            className="flex flex-col items-center gap-2.5 text-center"
+            className="flex flex-col items-center gap-2 text-center"
           >
             <span className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-primary-light">
               {category.imageUrl ? (
                 <Image src={category.imageUrl} alt="" width={80} height={80} className="h-full w-full object-cover" />
               ) : null}
             </span>
-            <span className="text-sm font-semibold leading-tight text-[#3A3835]">{category.name}</span>
+            <span className="text-xs font-semibold leading-tight text-[#3A3835] sm:text-sm">{category.name}</span>
           </Link>
         ))}
       </div>

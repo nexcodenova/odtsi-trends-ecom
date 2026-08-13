@@ -34,6 +34,7 @@ export function ProductCard({ product }: ProductCardProps) {
   const hasDiscount = product.compareAtPrice !== null && product.compareAtPrice > product.price;
   const discountPct = hasDiscount ? Math.round((1 - product.price / product.compareAtPrice!) * 100) : 0;
   const deal = bestTierDeal(product);
+  const secondImageUrl = product.images.find((url) => url !== product.imageUrl) ?? null;
 
   useEffect(() => {
     setSaved(isInWishlist(product.id));
@@ -71,9 +72,19 @@ export function ProductCard({ product }: ProductCardProps) {
               src={product.imageUrl}
               alt={product.name}
               fill
-              className="object-cover transition duration-300 group-hover:scale-105"
+              className={`object-cover transition duration-300 ${
+                secondImageUrl ? "group-hover:opacity-0" : "group-hover:scale-105"
+              }`}
             />
           ) : null}
+          {secondImageUrl && (
+            <Image
+              src={secondImageUrl}
+              alt={product.name}
+              fill
+              className="object-cover opacity-0 transition duration-300 group-hover:opacity-100"
+            />
+          )}
           {!product.inStock && (
             <span className="absolute inset-0 flex items-center justify-center bg-white/70 text-xs font-bold text-[#716D67]">
               Out of stock

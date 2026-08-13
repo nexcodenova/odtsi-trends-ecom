@@ -12,9 +12,9 @@ interface EditTile {
 // runs full-width like the rest of the page (no boxed-in max-w column).
 const TILES: EditTile[] = [
   { label: "Smart Gadgets", href: "/category/smart-gadgets", imageUrl: "/weekly-edit/smart-gadgets.png" },
-  { label: "LED Lighting", href: "/category/led-lighting" },
-  { label: "Beauty Tools", href: "/category/beauty-tools" },
-  { label: "Fashion", href: "/category/fashion" },
+  { label: "Beauty", href: "/category/beauty-tools", imageUrl: "/weekly-edit/beauty.png" },
+  { label: "Kids", href: "/category/baby-kids", imageUrl: "/weekly-edit/kids.png" },
+  { label: "Daily Life", href: "/category/home-kitchen", imageUrl: "/weekly-edit/daily-life.png" },
   { label: "Travel", href: "/category/travel", imageUrl: "/weekly-edit/travel.png" },
 ];
 

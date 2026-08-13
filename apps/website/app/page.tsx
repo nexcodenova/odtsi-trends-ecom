@@ -10,7 +10,7 @@ import { PLACEHOLDER_CATEGORIES } from "@/lib/placeholder-data";
 // Both banners are pre-designed graphics with their own text baked in,
 // so showTextOverlay stays off for these — flip it on for a plain photo.
 const HERO_SLIDES: HeroSlide[] = [
-  { imageUrl: "/hero-cashback.png", showTextOverlay: false, ctaHref: "/wallet" },
+  { imageUrl: "/hero-cashback.png", showTextOverlay: false, ctaHref: "/wallet", objectPosition: "object-top" },
   {
     imageUrl: "/hero-summer.png",
     imageUrlMobile: "/hero-summer-mobile.png",

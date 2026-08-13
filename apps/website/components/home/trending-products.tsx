@@ -31,7 +31,7 @@ export async function TrendingProducts() {
 
       <div className="mt-6 flex justify-center">
         <Link
-          href="/shop"
+          href="/collections"
           className="flex items-center gap-1.5 text-sm font-bold text-primary transition hover:text-primary-hover"
         >
           View All Products
