@@ -3,6 +3,11 @@ import { User, Wallet as WalletIcon } from "lucide-react";
 import { getSession } from "@/lib/session";
 import { LogoutButton } from "@/components/account/logout-button";
 
+// Reads the session cookie per-request — never worth prerendering, and
+// forcing this explicitly avoids relying on Next's own dynamic-API
+// detection to opt this route out of static generation at build time.
+export const dynamic = "force-dynamic";
+
 export default async function AccountPage() {
   const session = await getSession();
 
