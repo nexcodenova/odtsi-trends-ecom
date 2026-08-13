@@ -16,7 +16,7 @@ const MAX_RAIL_THUMBS = 6;
 
 export function ProductGallery({ images, productName, badge }: ProductGalleryProps) {
   const [active, setActive] = useState(0);
-  const hasImages = images.length > 0;
+  const activeImage = images[active] ?? images[0];
   const railImages = images.slice(0, MAX_RAIL_THUMBS);
   const overflowImages = images.slice(MAX_RAIL_THUMBS);
 
@@ -46,8 +46,8 @@ export function ProductGallery({ images, productName, badge }: ProductGalleryPro
         )}
 
         <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-gradient-to-br from-[#232323] to-[#060606]">
-          {hasImages ? (
-            <Image src={images[active]} alt={productName} fill priority className="object-cover" />
+          {activeImage ? (
+            <Image src={activeImage} alt={productName} fill priority className="object-cover" />
           ) : (
             <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold tracking-wide text-white/25">
               ◇ photo goes here

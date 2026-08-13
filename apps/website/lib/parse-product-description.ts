@@ -17,7 +17,7 @@ export function parseProductDescription(html: string): ParsedDescription {
   const textHtml = clean.replace(/<img\b[^>]*>/gi, (imgTag) => {
     const srcMatch = imgTag.match(/src=["']([^"']+)["']/i);
     const altMatch = imgTag.match(/alt=["']([^"']*)["']/i);
-    if (srcMatch) images.push({ src: srcMatch[1], alt: altMatch?.[1] ?? "" });
+    if (srcMatch?.[1]) images.push({ src: srcMatch[1], alt: altMatch?.[1] ?? "" });
     return "";
   });
 

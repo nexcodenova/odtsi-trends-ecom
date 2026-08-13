@@ -51,7 +51,10 @@ export function PackSelector({ product }: { product: Product }) {
 
   function handleAdd() {
     const tier = product.quantityTiers[selectedTier];
-    const multiplier = multipliers[selectedTier];
+    if (!tier) return;
+    const multiplier = multipliers[selectedTier] ?? 1;
+    const tierLabel = tier.label ?? "Pack of " + tier.quantity;
+    const packName = product.name + " — " + tierLabel;
     // Cart stores a per-unit price so quantity × price still adds up
     // correctly on the cart page — the tier rate, not the base price.
     // step = tier.quantity so the cart's +/- buttons move by whole packs.
@@ -61,7 +64,7 @@ export function PackSelector({ product }: { product: Product }) {
       {
         productId: product.id,
         slug: product.slug,
-        name: `${product.name} — ${tier.label ?? `Pack of ${tier.quantity}`}`,
+        name: packName,
         price: tier.price / tier.quantity,
         imageUrl: product.imageUrl,
         step: tier.quantity,
@@ -71,7 +74,7 @@ export function PackSelector({ product }: { product: Product }) {
     );
     notifyAdded({
       type: "cart",
-      name: `${product.name} — ${tier.label ?? `Pack of ${tier.quantity}`}`,
+      name: packName,
       imageUrl: product.imageUrl,
       price: tier.price * multiplier,
     });
@@ -88,7 +91,7 @@ export function PackSelector({ product }: { product: Product }) {
       <div className="mx-auto mt-8 grid max-w-6xl grid-cols-1 gap-4 sm:grid-cols-3">
         {product.quantityTiers.map((tier, i) => {
           const selected = i === selectedTier;
-          const multiplier = multipliers[i];
+          const multiplier = multipliers[i] ?? 1;
           // How many bundles of this tier the real stock can actually cover.
           const bundleMax = maxQuantity != null ? Math.floor(maxQuantity / tier.quantity) : null;
           const unavailable = bundleMax != null && bundleMax < 1;
