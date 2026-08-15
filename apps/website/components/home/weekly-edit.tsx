@@ -63,15 +63,14 @@ function MasonryColumns({
   tiles,
   columnCount,
   className,
-  offsetSideColumns = false,
+  extendMiddleColumn = false,
 }: {
   tiles: EditTile[];
   columnCount: number;
   className: string;
-  // Drops every column except the middle one down a quarter-turn, so the
-  // tall center tile reads as the anchor and the two side columns feel
-  // staggered around it instead of all three lining up flush at the top.
-  offsetSideColumns?: boolean;
+  // Middle column overflows 25% past the side columns on both top and
+  // bottom — taller and poking out both ends, not flush or inset with them.
+  extendMiddleColumn?: boolean;
 }) {
   const columns = distributeIntoColumns(tiles, columnCount);
   const middleIndex = Math.floor((columnCount - 1) / 2);
@@ -83,7 +82,13 @@ function MasonryColumns({
         <div
           key={i}
           className="flex flex-col"
-          style={offsetSideColumns && i !== middleIndex ? { marginTop: "10%" } : undefined}
+          style={
+            extendMiddleColumn
+              ? i === middleIndex
+                ? { marginTop: "-8%", marginBottom: "-8%" }
+                : { marginTop: "6%" }
+              : undefined
+          }
         >
           {column.map((tile) => (
             <Tile key={tile.label} tile={tile} delay={delayOf(tile)} />
@@ -106,7 +111,7 @@ export function WeeklyEdit() {
       </div>
 
       <MasonryColumns tiles={TILES} columnCount={2} className="mt-8 sm:hidden" />
-      <MasonryColumns tiles={TILES} columnCount={3} className="mt-8 hidden sm:grid" offsetSideColumns />
+      <MasonryColumns tiles={TILES} columnCount={3} className="mt-8 hidden sm:grid sm:mt-20" extendMiddleColumn />
     </section>
   );
 }

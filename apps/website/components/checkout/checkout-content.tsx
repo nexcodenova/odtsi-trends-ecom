@@ -6,6 +6,7 @@ import { useCart } from "@/hooks/use-cart";
 import { formatCurrency } from "@odtsi/utils";
 import { createCheckout } from "@odtsi/exiuscart-client";
 import { useCurrency } from "@/hooks/use-currency";
+import { saveOrderRecord } from "@/lib/order-history";
 
 export function CheckoutContent() {
   const { items, subtotal } = useCart();
@@ -21,12 +22,14 @@ export function CheckoutContent() {
 
     const form = new FormData(e.currentTarget);
 
+    const email = String(form.get("email"));
+
     try {
-      await createCheckout({
+      const { order } = await createCheckout({
         items: items.map((item) => ({ productId: item.productId, quantity: item.quantity })),
         customer: {
           name: String(form.get("name")),
-          email: String(form.get("email")),
+          email,
           phone: String(form.get("phone")),
         },
         shippingAddress: {
@@ -37,6 +40,9 @@ export function CheckoutContent() {
           country: String(form.get("country")),
         },
       });
+      // Remembered locally so Order History on the account page can look
+      // this up for real — ExiusCart has no account-wide order list yet.
+      saveOrderRecord({ orderNumber: order.orderNumber, email });
       // TODO: once this succeeds for real, clear the cart and redirect to
       // /order/{orderNumber} using the returned order + take clientSecret
       // to Stripe Elements to actually collect payment.
