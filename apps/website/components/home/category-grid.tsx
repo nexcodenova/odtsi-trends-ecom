@@ -14,8 +14,8 @@ interface CategoryGridProps {
 // the pagination math can never drift apart like they did before (columns
 // were set in Tailwind classes while row-slicing assumed a different count).
 const BREAKPOINTS = [
-  { minWidth: 768, columns: 8, rows: 2 }, // md and up
-  { minWidth: 640, columns: 6, rows: 2 }, // sm
+  { minWidth: 768, columns: 10, rows: 2 }, // md and up
+  { minWidth: 640, columns: 8, rows: 2 }, // sm
 ];
 // Always matches (minWidth 0) — the guaranteed fallback below 640px, kept
 // separate from BREAKPOINTS so its type isn't "possibly undefined" like an

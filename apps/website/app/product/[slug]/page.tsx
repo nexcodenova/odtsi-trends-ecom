@@ -61,7 +61,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   const [reviews, session] = await Promise.all([loadReviews(slug), getSession()]);
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-5 lg:px-8">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-5 lg:px-8">
       <nav className="text-xs text-[#8B8880]">
         <Link href="/" className="hover:text-primary">
           Home

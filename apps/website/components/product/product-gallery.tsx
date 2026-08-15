@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { ImageLens } from "@/components/product/image-lens";
 
 interface ProductGalleryProps {
   images: string[];
@@ -47,7 +48,9 @@ export function ProductGallery({ images, productName, badge }: ProductGalleryPro
 
         <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-gradient-to-br from-[#232323] to-[#060606]">
           {activeImage ? (
-            <Image src={activeImage} alt={productName} fill priority className="object-cover" />
+            <ImageLens src={activeImage}>
+              <Image src={activeImage} alt={productName} fill priority className="object-cover" />
+            </ImageLens>
           ) : (
             <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold tracking-wide text-white/25">
               ◇ photo goes here

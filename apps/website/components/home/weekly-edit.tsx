@@ -1,51 +1,96 @@
 import Image from "next/image";
 import Link from "next/link";
+import { BlurFadeIn } from "@/components/shared/blur-fade-in";
 
 interface EditTile {
   label: string;
   href: string;
-  imageUrl?: string;
+  imageUrl: string;
+  // Real pixel dimensions — next/image needs these to reserve the right
+  // aspect ratio per tile so the masonry columns settle without jumping
+  // once each image loads.
+  width: number;
+  height: number;
 }
 
-// Left column: 2 stacked tiles. Middle: 1 tile spanning both rows (tall).
-// Right column: 2 stacked tiles. Matches the reference mosaic exactly, and
-// runs full-width like the rest of the page (no boxed-in max-w column).
+// Masonry gallery, same spirit as MagicUI's BlurFade demo — each tile
+// keeps its own real aspect ratio (kids.png is portrait, the rest are
+// landscape) instead of being cropped into a fixed mosaic grid.
 const TILES: EditTile[] = [
-  { label: "Smart Gadgets", href: "/category/smart-gadgets", imageUrl: "/weekly-edit/smart-gadgets.png" },
-  { label: "Beauty", href: "/category/beauty-tools", imageUrl: "/weekly-edit/beauty.png" },
-  { label: "Kids", href: "/category/baby-kids", imageUrl: "/weekly-edit/kids.png" },
-  { label: "Daily Life", href: "/category/home-kitchen", imageUrl: "/weekly-edit/daily-life.png" },
-  { label: "Travel", href: "/category/travel", imageUrl: "/weekly-edit/travel.png" },
+  { label: "Smart Gadgets", href: "/category/smart-gadgets", imageUrl: "/weekly-edit/smart-gadgets.png", width: 1672, height: 941 },
+  { label: "Kids", href: "/category/baby-kids", imageUrl: "/weekly-edit/kids.png", width: 1024, height: 1536 },
+  { label: "Daily Life", href: "/category/home-kitchen", imageUrl: "/weekly-edit/daily-life.png", width: 1672, height: 941 },
+  { label: "Beauty", href: "/category/beauty-tools", imageUrl: "/weekly-edit/beauty.png", width: 1672, height: 941 },
+  { label: "Travel", href: "/category/travel", imageUrl: "/weekly-edit/travel.png", width: 1672, height: 941 },
 ];
 
-const POSITIONS = [
-  "col-start-1 row-start-1",
-  "col-start-1 row-start-2",
-  "col-start-2 row-start-1 row-span-2",
-  "col-start-3 row-start-1",
-  "col-start-3 row-start-2",
-];
+// CSS's `columns` property "balances" height by guessing — with only 5
+// tiles at very different aspect ratios (one portrait among four
+// landscape) it guessed badly and left a whole column nearly empty. This
+// greedily drops each tile into whichever column is currently shortest
+// (by real aspect ratio, not item count), same idea real masonry libraries
+// use, so no column ever ends up empty.
+function distributeIntoColumns(tiles: EditTile[], columnCount: number): EditTile[][] {
+  const columns: EditTile[][] = Array.from({ length: columnCount }, () => []);
+  const heights = new Array(columnCount).fill(0);
 
-function Tile({ tile }: { tile: EditTile }) {
+  for (const tile of tiles) {
+    const shortest = heights.indexOf(Math.min(...heights));
+    columns[shortest]!.push(tile);
+    heights[shortest] += tile.height / tile.width;
+  }
+
+  return columns;
+}
+
+function Tile({ tile, delay }: { tile: EditTile; delay: number }) {
   return (
-    <Link
-      href={tile.href}
-      className="group relative block h-full w-full overflow-hidden rounded-2xl bg-[#F6F5F3]"
-    >
-      {tile.imageUrl ? (
+    <BlurFadeIn delay={delay} className="mb-4">
+      <Link href={tile.href} className="group relative block w-full overflow-hidden rounded-2xl bg-[#F6F5F3]">
         <Image
           src={tile.imageUrl}
           alt={tile.label}
-          fill
-          className="object-cover transition group-hover:scale-105"
+          width={tile.width}
+          height={tile.height}
+          className="h-auto w-full rounded-2xl object-cover transition group-hover:scale-105"
         />
-      ) : (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-[#B9B6AE]">
-          <span className="text-xs font-semibold tracking-wide">◇ photo goes here</span>
-          <span className="text-[11px]">{tile.label}</span>
+      </Link>
+    </BlurFadeIn>
+  );
+}
+
+function MasonryColumns({
+  tiles,
+  columnCount,
+  className,
+  offsetSideColumns = false,
+}: {
+  tiles: EditTile[];
+  columnCount: number;
+  className: string;
+  // Drops every column except the middle one down a quarter-turn, so the
+  // tall center tile reads as the anchor and the two side columns feel
+  // staggered around it instead of all three lining up flush at the top.
+  offsetSideColumns?: boolean;
+}) {
+  const columns = distributeIntoColumns(tiles, columnCount);
+  const middleIndex = Math.floor((columnCount - 1) / 2);
+  const delayOf = (tile: EditTile) => tiles.indexOf(tile) * 80;
+
+  return (
+    <div className={`grid gap-4 ${className}`} style={{ gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))` }}>
+      {columns.map((column, i) => (
+        <div
+          key={i}
+          className="flex flex-col"
+          style={offsetSideColumns && i !== middleIndex ? { marginTop: "10%" } : undefined}
+        >
+          {column.map((tile) => (
+            <Tile key={tile.label} tile={tile} delay={delayOf(tile)} />
+          ))}
         </div>
-      )}
-    </Link>
+      ))}
+    </div>
   );
 }
 
@@ -60,17 +105,8 @@ export function WeeklyEdit() {
         <span className="h-px flex-1 bg-[#DEDCD5]" />
       </div>
 
-      {/* Mobile: plain vertical stack, one full-width tile per row — the
-          desktop mosaic (tall middle tile spanning both rows) turns into a
-          near-empty sliver once 3 columns get squeezed into a phone width,
-          so it only kicks in from sm: up. */}
-      <div className="mt-8 flex flex-col gap-3 sm:grid sm:aspect-[16/6] sm:grid-cols-3 sm:grid-rows-2">
-        {TILES.map((tile, i) => (
-          <div key={tile.label} className={`aspect-[4/3] w-full sm:aspect-auto ${POSITIONS[i]}`}>
-            <Tile tile={tile} />
-          </div>
-        ))}
-      </div>
+      <MasonryColumns tiles={TILES} columnCount={2} className="mt-8 sm:hidden" />
+      <MasonryColumns tiles={TILES} columnCount={3} className="mt-8 hidden sm:grid" offsetSideColumns />
     </section>
   );
 }
