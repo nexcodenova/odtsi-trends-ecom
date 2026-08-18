@@ -17,6 +17,15 @@ interface Tile {
   thumbnailUrl: string | null;
   alt: string;
   label?: string;
+  // TikTok's real shape is a 9:16 portrait player, not YouTube's 16:9
+  // landscape — forcing both into the same box either crops TikTok's
+  // frame or leaves it tiny and letterboxed. Testimonials have no
+  // platform field, so they fall back to the landscape shape.
+  portrait: boolean;
+}
+
+function isPortrait(platform: string): boolean {
+  return platform === "tiktok";
 }
 
 // Nested glow-circle play button, same shape as MagicUI's HeroVideoDialog —
@@ -39,7 +48,9 @@ function VideoThumb({ tile, onOpen }: { tile: Tile; onOpen: () => void }) {
     <button
       type="button"
       onClick={() => (tile.embedHtml ? onOpen() : window.open(tile.href, "_blank", "noopener,noreferrer"))}
-      className="group relative block aspect-[16/9] w-full overflow-hidden rounded-2xl bg-[#F6F5F3] text-left"
+      className={`group relative block w-full overflow-hidden rounded-2xl bg-[#F6F5F3] text-left ${
+        tile.portrait ? "aspect-[9/16] max-w-[280px]" : "aspect-[16/9]"
+      }`}
     >
       {tile.thumbnailUrl && (
         <Image
@@ -64,7 +75,7 @@ function VideoThumb({ tile, onOpen }: { tile: Tile; onOpen: () => void }) {
 // dependency to go wrong in production. Mounts hidden, then flips visible a
 // tick later so the transition classes actually animate in instead of
 // snapping straight to the open state.
-function VideoDialog({ embedHtml, onClose }: { embedHtml: string; onClose: () => void }) {
+function VideoDialog({ embedHtml, portrait, onClose }: { embedHtml: string; portrait: boolean; onClose: () => void }) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -86,9 +97,9 @@ function VideoDialog({ embedHtml, onClose }: { embedHtml: string; onClose: () =>
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className={`relative mx-4 aspect-video w-full max-w-4xl transition-all duration-200 ease-out sm:mx-0 ${
-          visible ? "scale-100 opacity-100" : "scale-90 opacity-0"
-        }`}
+        className={`relative mx-4 w-full transition-all duration-200 ease-out sm:mx-0 ${
+          portrait ? "aspect-[9/16] max-w-sm" : "aspect-video max-w-4xl"
+        } ${visible ? "scale-100 opacity-100" : "scale-90 opacity-0"}`}
       >
         <button
           type="button"
@@ -124,6 +135,7 @@ export function ProductVideos({ videos, testimonials }: Props) {
       thumbnailUrl: video.thumbnailUrl,
       alt: video.title ?? "Product video",
       label: video.title ?? undefined,
+      portrait: isPortrait(video.platform),
     })),
     ...testimonials.map((t) => ({
       key: t.id,
@@ -132,6 +144,7 @@ export function ProductVideos({ videos, testimonials }: Props) {
       thumbnailUrl: t.thumbnailUrl,
       alt: t.customerName,
       label: t.customerName,
+      portrait: false,
     })),
   ];
 
@@ -139,13 +152,17 @@ export function ProductVideos({ videos, testimonials }: Props) {
 
   return (
     <>
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+      <div className="flex flex-wrap items-start gap-5">
         {tiles.map((tile) => (
-          <VideoThumb key={tile.key} tile={tile} onOpen={() => setOpenKey(tile.key)} />
+          <div key={tile.key} className={tile.portrait ? "w-[45%] min-w-[160px] sm:w-[220px]" : "w-full sm:w-[calc(50%-10px)]"}>
+            <VideoThumb tile={tile} onOpen={() => setOpenKey(tile.key)} />
+          </div>
         ))}
       </div>
 
-      {openTile?.embedHtml && <VideoDialog embedHtml={openTile.embedHtml} onClose={() => setOpenKey(null)} />}
+      {openTile?.embedHtml && (
+        <VideoDialog embedHtml={openTile.embedHtml} portrait={openTile.portrait} onClose={() => setOpenKey(null)} />
+      )}
     </>
   );
 }
