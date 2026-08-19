@@ -53,11 +53,11 @@ export function ConnectSection() {
                 }}
                 placeholder="E-mail"
                 aria-label="Email address"
-                className="h-14 flex-1 rounded-xl border-2 border-black/10 bg-white px-5 text-sm text-[#16161A] shadow-sm outline-none placeholder:text-[#a3a19c] focus:border-action"
+                className="h-16 w-full rounded-xl border-2 border-black/10 bg-white px-5 text-sm text-[#16161A] shadow-sm outline-none placeholder:text-[#a3a19c] focus:border-action sm:w-auto sm:flex-1"
               />
               <button
                 type="submit"
-                className="mx-auto flex h-14 w-1/2 flex-shrink-0 items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-[#F6C935] to-[#C99200] px-8 text-sm font-extrabold text-[#16161A] shadow-[0_6px_16px_-6px_rgba(201,146,0,0.55)] transition hover:brightness-105 sm:mx-0 sm:w-auto"
+                className="mx-auto flex h-16 w-1/2 flex-shrink-0 items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-[#F6C935] to-[#C99200] px-8 text-sm font-extrabold text-[#16161A] shadow-[0_6px_16px_-6px_rgba(201,146,0,0.55)] transition hover:brightness-105 sm:mx-0 sm:w-auto"
               >
                 <Mail size={15} />
                 Subscribe
