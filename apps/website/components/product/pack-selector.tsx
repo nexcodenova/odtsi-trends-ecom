@@ -82,13 +82,21 @@ export function PackSelector({ product }: { product: Product }) {
     setTimeout(() => setJustAdded(false), 2000);
   }
 
+  // A grid hardcoded to 3 columns leaves a lone card stranded on the left
+  // with two-thirds of the row as dead blank space when a product only has
+  // 1 or 2 tiers — easy to mistake for "the pack isn't showing at all".
+  // Size both the column count and the max width to the real tier count.
+  const tierCount = product.quantityTiers.length;
+  const gridColsClass = tierCount <= 1 ? "sm:grid-cols-1" : tierCount === 2 ? "sm:grid-cols-2" : "sm:grid-cols-3";
+  const gridMaxWidthClass = tierCount <= 1 ? "max-w-sm" : tierCount === 2 ? "max-w-2xl" : "max-w-6xl";
+
   return (
     <div>
       <h2 className="text-center text-2xl font-extrabold tracking-tight text-primary sm:text-3xl">
         Choose Your Pack
       </h2>
 
-      <div className="mx-auto mt-8 grid max-w-6xl grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className={`mx-auto mt-8 grid grid-cols-1 gap-4 ${gridMaxWidthClass} ${gridColsClass}`}>
         {product.quantityTiers.map((tier, i) => {
           const selected = i === selectedTier;
           const multiplier = multipliers[i] ?? 1;
