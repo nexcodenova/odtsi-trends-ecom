@@ -110,7 +110,7 @@ export function WeeklyEdit() {
         <span className="h-px flex-1 bg-[#DEDCD5]" />
       </div>
 
-      <MasonryColumns tiles={TILES} columnCount={2} className="mt-8 sm:hidden" />
+      <MasonryColumns tiles={TILES} columnCount={1} className="mt-8 sm:hidden" />
       <MasonryColumns tiles={TILES} columnCount={3} className="mt-8 hidden sm:grid sm:mt-20" extendMiddleColumn />
     </section>
   );

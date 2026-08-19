@@ -56,8 +56,11 @@ export function Footer() {
         ))}
       </div>
 
-      <div className="border-t border-black/10 px-5 py-5 text-center text-xs text-[#8B8880]">
-        &copy; {new Date().getFullYear()} ODTSI. All rights reserved.
+      <div className="flex flex-col items-center gap-1 border-t border-black/10 px-5 py-5 text-center text-xs text-[#8B8880]">
+        <p>&copy; {new Date().getFullYear()} ODTSI. All rights reserved.</p>
+        <p>
+          Developed by NexCode Nova &middot; Managed by ExiusCart Platforms, under Fairam Pvt Ltd
+        </p>
       </div>
     </footer>
   );

@@ -236,7 +236,7 @@ export function Navbar({ categories }: { categories: Category[] }) {
       </div>
 
       {/* Mobile-only search row — search is too important to hide behind a tap on an e-commerce site. Always visible. */}
-      <div className="flex h-11 items-stretch bg-primary px-4 pb-3 sm:hidden">
+      <div className="flex h-14 items-stretch bg-primary px-4 pb-3 sm:hidden">
         <div className="flex flex-1 items-stretch overflow-hidden rounded-full bg-white/90">
           <input
             type="search"
@@ -246,7 +246,7 @@ export function Navbar({ categories }: { categories: Category[] }) {
           <button
             type="button"
             aria-label="Search"
-            className="flex w-11 items-center justify-center rounded-r-full bg-action text-action-ink"
+            className="flex w-14 items-center justify-center rounded-r-full bg-action text-action-ink"
           >
             <Search size={16} />
           </button>
