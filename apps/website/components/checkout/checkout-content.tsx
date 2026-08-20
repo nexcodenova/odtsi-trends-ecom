@@ -5,14 +5,11 @@ import Link from "next/link";
 import { useCart } from "@/hooks/use-cart";
 import { formatCurrency } from "@odtsi/utils";
 import { createCheckout } from "@odtsi/exiuscart-client";
-import { useCurrency } from "@/hooks/use-currency";
 import { saveOrderRecord } from "@/lib/order-history";
 
 export function CheckoutContent() {
   const { items, subtotal } = useCart();
-  const { currency, rates } = useCurrency();
-  const rate = rates?.[currency] ?? 1;
-  const price = (amount: number) => formatCurrency(amount * rate, currency);
+  const price = (amount: number) => formatCurrency(amount, "USD");
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
 

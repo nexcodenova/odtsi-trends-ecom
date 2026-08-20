@@ -5,7 +5,6 @@ import { Plus } from "lucide-react";
 import type { Product, BundleOffer } from "@odtsi/exiuscart-client";
 import { formatCurrency } from "@odtsi/utils";
 import { addToCart } from "@/lib/cart";
-import { useCurrency } from "@/hooks/use-currency";
 
 interface BundleOfferSectionProps {
   product: Product;
@@ -17,9 +16,7 @@ interface BundleOfferSectionProps {
 // here. Adding the bundle just adds each item at its normal price; the
 // discount lands once ExiusCart recognizes the combination at checkout.
 export function BundleOfferSection({ product, bundle }: BundleOfferSectionProps) {
-  const { currency, rates } = useCurrency();
-  const rate = rates?.[currency] ?? 1;
-  const price = (amount: number) => formatCurrency(amount * rate, currency);
+  const price = (amount: number) => formatCurrency(amount, "USD");
 
   const savings = bundle.regularTotal - bundle.bundlePrice;
 

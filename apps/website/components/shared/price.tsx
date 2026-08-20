@@ -1,19 +1,14 @@
-"use client";
-
-import { useCurrency } from "@/hooks/use-currency";
 import { formatCurrency } from "@odtsi/utils";
 
 interface PriceProps {
-  // Amount in GBP — the base currency prices are stored in.
+  // Whatever ExiusCart sends, shown as-is — no client-side conversion.
+  // ExiusCart is being asked to add a storefront_currency setting so every
+  // price it sends is already converted to USD server-side; once that's
+  // live this number is exactly what the customer sees.
   amount: number;
   className?: string;
 }
 
-// Converts using live exchange rates for display only. What a customer is
-// actually charged still depends on the payment gateway's own currency
-// handling — this is browsing convenience, not the checkout total.
 export function Price({ amount, className }: PriceProps) {
-  const { currency, rates } = useCurrency();
-  const rate = rates?.[currency] ?? 1;
-  return <span className={className}>{formatCurrency(amount * rate, currency)}</span>;
+  return <span className={className}>{formatCurrency(amount, "USD")}</span>;
 }

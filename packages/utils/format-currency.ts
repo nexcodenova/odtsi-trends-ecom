@@ -6,7 +6,7 @@ const LOCALE_BY_CURRENCY: Record<string, string> = {
   EUR: "de-DE",
 };
 
-export function formatCurrency(amount: number, currency: string = "GBP") {
+export function formatCurrency(amount: number, currency: string = "USD") {
   const locale = LOCALE_BY_CURRENCY[currency] ?? "en-GB";
   return new Intl.NumberFormat(locale, { style: "currency", currency }).format(amount);
 }
@@ -21,7 +21,7 @@ export interface CurrencyParts {
 
 // Splits a formatted price into symbol/whole/decimal so the UI can size
 // the whole-dollar amount bigger than the cents, instead of one flat size.
-export function formatCurrencyParts(amount: number, currency: string = "GBP"): CurrencyParts {
+export function formatCurrencyParts(amount: number, currency: string = "USD"): CurrencyParts {
   const locale = LOCALE_BY_CURRENCY[currency] ?? "en-GB";
   const parts = new Intl.NumberFormat(locale, { style: "currency", currency }).formatToParts(amount);
 

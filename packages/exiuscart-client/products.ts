@@ -87,9 +87,11 @@ function mapProduct(raw: RawProduct): Product {
     description: raw.description,
     price: raw.price,
     compareAtPrice: raw.compare_at_price,
-    // ExiusCart hasn't returned a currency field yet — assumed GBP until
-    // confirmed, same as everywhere else prices are treated as GBP base.
-    currency: "GBP",
+    // ExiusCart hasn't returned a currency field yet — confirmed EUR by
+    // comparing raw API prices against the ExiusCart dashboard's own EUR
+    // vs USD columns (the USD figures there are exactly EUR × the real
+    // EUR→USD rate), same base currency assumed everywhere else.
+    currency: "EUR",
     imageUrl: raw.images[0] ?? "",
     images: raw.images,
     videos: mapVideos(raw),

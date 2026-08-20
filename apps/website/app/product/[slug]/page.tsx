@@ -111,6 +111,8 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             {product.inStock ? "In Stock — Order Now Before It's Gone" : "Out of Stock"}
           </p>
 
+          <AddToCartSection product={product} />
+
           <div className="mt-5 grid grid-cols-3 gap-3 border-y border-black/5 py-5">
             {BENEFITS.map(({ icon: Icon, label }) => (
               <div key={label} className="flex flex-col items-center gap-2 text-center">
@@ -121,8 +123,6 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
               </div>
             ))}
           </div>
-
-          <AddToCartSection product={product} />
 
           {product.bundle && <BundleOfferSection product={product} bundle={product.bundle} />}
 

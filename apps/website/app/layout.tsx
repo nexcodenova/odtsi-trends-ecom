@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
-import { CurrencyProvider } from "@/hooks/use-currency";
 import { AddedNotification } from "@/components/shared/added-notification";
 import { getCategories, type Category } from "@odtsi/exiuscart-client";
 import { PLACEHOLDER_CATEGORIES } from "@/lib/placeholder-data";
@@ -32,12 +31,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="en">
       <body className={plusJakarta.className}>
-        <CurrencyProvider>
-          <Navbar categories={categories} />
-          <main>{children}</main>
-          <Footer />
-          <AddedNotification />
-        </CurrencyProvider>
+        <Navbar categories={categories} />
+        <main>{children}</main>
+        <Footer />
+        <AddedNotification />
       </body>
     </html>
   );

@@ -8,13 +8,10 @@ import { removeFromWishlist } from "@/lib/wishlist";
 import { addToCart } from "@/lib/cart";
 import { notifyAdded } from "@/lib/notify";
 import { formatCurrency } from "@odtsi/utils";
-import { useCurrency } from "@/hooks/use-currency";
 
 export function WishlistContent() {
   const { items } = useWishlist();
-  const { currency, rates } = useCurrency();
-  const rate = rates?.[currency] ?? 1;
-  const price = (amount: number) => formatCurrency(amount * rate, currency);
+  const price = (amount: number) => formatCurrency(amount, "USD");
 
   if (items.length === 0) {
     return (

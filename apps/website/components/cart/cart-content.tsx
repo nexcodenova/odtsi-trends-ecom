@@ -6,13 +6,10 @@ import { Minus, Plus, X, ShoppingCart } from "lucide-react";
 import { useCart } from "@/hooks/use-cart";
 import { updateQuantity, removeFromCart } from "@/lib/cart";
 import { formatCurrency } from "@odtsi/utils";
-import { useCurrency } from "@/hooks/use-currency";
 
 export function CartContent() {
   const { items, subtotal } = useCart();
-  const { currency, rates } = useCurrency();
-  const rate = rates?.[currency] ?? 1;
-  const price = (amount: number) => formatCurrency(amount * rate, currency);
+  const price = (amount: number) => formatCurrency(amount, "USD");
 
   if (items.length === 0) {
     return (

@@ -7,7 +7,6 @@ import type { Product } from "@odtsi/exiuscart-client";
 import { addToCart } from "@/lib/cart";
 import { notifyAdded } from "@/lib/notify";
 import { formatCurrency, formatCurrencyParts } from "@odtsi/utils";
-import { useCurrency } from "@/hooks/use-currency";
 
 // A distinct display face for the pricing/titles here, separate from the
 // site's body font (Plus Jakarta Sans) — geometric and punchy, so the
@@ -18,8 +17,8 @@ const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["600", "700"] 
 const BADGE_STYLE = "bg-action text-action-ink";
 
 // Big whole-dollar amount, small symbol/decimal, in the distinct display face.
-function BigPrice({ amount, currency, rate }: { amount: number; currency: string; rate: number }) {
-  const { symbol, whole, decimal } = formatCurrencyParts(amount * rate, currency);
+function BigPrice({ amount }: { amount: number }) {
+  const { symbol, whole, decimal } = formatCurrencyParts(amount, "USD");
   return (
     <span className={`${spaceGrotesk.className} text-[#16161A]`}>
       <span className="align-top text-sm">{symbol}</span>
@@ -34,9 +33,7 @@ function BigPrice({ amount, currency, rate }: { amount: number; currency: string
 // in AddToCartSection. Only the selected card's bundle × its own stepper
 // value is what Add to Cart here actually adds.
 export function PackSelector({ product }: { product: Product }) {
-  const { currency, rates } = useCurrency();
-  const rate = rates?.[currency] ?? 1;
-  const price = (amount: number) => formatCurrency(amount * rate, currency);
+  const price = (amount: number) => formatCurrency(amount, "USD");
 
   const defaultTierIndex = Math.max(0, product.quantityTiers.findIndex((t) => t.recommended));
   const [selectedTier, setSelectedTier] = useState(defaultTierIndex === -1 ? 0 : defaultTierIndex);
@@ -142,7 +139,7 @@ export function PackSelector({ product }: { product: Product }) {
               <div className="flex items-center justify-between gap-3 pr-7">
                 <p className="text-lg font-extrabold text-[#16161A]">{tier.label ?? `Buy ${tier.quantity}`}</p>
                 <div className="flex items-baseline gap-2">
-                  <BigPrice amount={tier.price * multiplier} currency={currency} rate={rate} />
+                  <BigPrice amount={tier.price * multiplier} />
                   {savings > 0 && (
                     <span className="text-xs text-[#a3a19c] line-through">{price(compareTotal * multiplier)}</span>
                   )}
