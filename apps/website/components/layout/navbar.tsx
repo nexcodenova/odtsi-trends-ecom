@@ -350,8 +350,9 @@ export function Navbar({ categories }: { categories: Category[] }) {
           <NavIconLink href="/wallet" label="Wallet" className="hidden sm:flex">
             <Wallet size={24} />
           </NavIconLink>
-          <NavIconLink href="/wishlist" label="Wishlist" className="hidden sm:flex" count={wishlistItems.length}>
-            <Heart size={24} />
+          <NavIconLink href="/wishlist" label="Wishlist" count={wishlistItems.length}>
+            <Heart size={22} className="sm:hidden" />
+            <Heart size={24} className="hidden sm:block" />
           </NavIconLink>
           {/* Deliberately not the small stacked icon+caption style the rest
               of this row uses — bigger text, icon beside it, stands out. */}
