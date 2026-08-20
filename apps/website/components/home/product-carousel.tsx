@@ -1,26 +1,15 @@
 import type { Product } from "@odtsi/exiuscart-client";
 import { ProductCard } from "@/components/product/product-card";
 
-// Mobile: plain 2-column grid, wraps line by line — no horizontal scroll.
-// sm and up: horizontal scroll carousel, native swipe/trackpad/drag through
-// the row instead of arrow buttons. Every real product is here either way,
-// not capped at any count.
+// Mobile: 2-column grid. sm/md: 4-column. lg and up: 6-column. All of
+// these wrap line by line — no horizontal scroll anywhere. Every real
+// product is here either way, not capped at any count.
 export function ProductCarousel({ products }: { products: Product[] }) {
   return (
-    <>
-      <div className="grid grid-cols-2 gap-4 sm:hidden">
-        {products.map((product) => (
-          <ProductCard key={product.id} product={product} />
-        ))}
-      </div>
-
-      <div className="hidden gap-4 overflow-x-auto scroll-smooth pb-1 sm:flex">
-        {products.map((product) => (
-          <div key={product.id} className="w-[220px] flex-shrink-0">
-            <ProductCard product={product} />
-          </div>
-        ))}
-      </div>
-    </>
+    <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-6">
+      {products.map((product) => (
+        <ProductCard key={product.id} product={product} />
+      ))}
+    </div>
   );
 }
