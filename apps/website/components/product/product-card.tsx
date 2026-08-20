@@ -156,15 +156,17 @@ export function ProductCard({ product }: ProductCardProps) {
         type="button"
         onClick={handleAdd}
         disabled={!product.inStock}
-        className="mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-[#F6C935] to-[#C99200] text-base font-extrabold text-[#16161A] shadow-[0_6px_16px_-6px_rgba(201,146,0,0.55)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none disabled:from-[#e5e5e5] disabled:to-[#e5e5e5]"
+        className="mt-3 flex h-9 w-full items-center justify-center gap-1.5 rounded-xl bg-gradient-to-br from-[#F6C935] to-[#C99200] text-xs font-extrabold text-[#16161A] shadow-[0_6px_16px_-6px_rgba(201,146,0,0.55)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none disabled:from-[#e5e5e5] disabled:to-[#e5e5e5] sm:h-12 sm:gap-2 sm:text-base"
       >
         {justAdded ? (
           <>
-            <Check size={18} /> Added
+            <Check size={14} className="sm:hidden" />
+            <Check size={18} className="hidden sm:block" /> Added
           </>
         ) : (
           <>
-            <ShoppingCart size={18} /> Add to Cart
+            <ShoppingCart size={14} className="sm:hidden" />
+            <ShoppingCart size={18} className="hidden sm:block" /> Add to Cart
           </>
         )}
       </button>

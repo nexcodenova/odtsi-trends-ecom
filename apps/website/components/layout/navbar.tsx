@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import Image from "next/image";
-import { Heart, Menu, Search, ShoppingCart, User, ChevronDown, Flame, Tag, Layers, Gift, Newspaper, Wallet, Brain } from "lucide-react";
+import { Heart, Menu, Search, ShoppingCart, User, ChevronDown, Flame, Tag, Layers, Gift, Newspaper, Wallet, Brain, X } from "lucide-react";
 import type { Category } from "@odtsi/exiuscart-client";
 import { useCart } from "@/hooks/use-cart";
 import { useWishlist } from "@/hooks/use-wishlist";
@@ -172,17 +172,154 @@ function CategoriesDropdown({ categories }: { categories: Category[] }) {
   );
 }
 
+// The hamburger button had no click handler at all before this — on mobile,
+// Wallet/Wishlist/Account are hidden from row 1 to keep it uncluttered, so
+// without a real drawer there was no way to reach any of them on a phone.
+// Portaled to <body>, same reasoning as CategoriesDropdown: escapes the
+// sticky header's own stacking context instead of fighting z-index there.
+function MobileMenu({
+  categories,
+  wishlistCount,
+  onClose,
+}: {
+  categories: Category[];
+  wishlistCount: number;
+  onClose: () => void;
+}) {
+  const [mounted, setMounted] = useState(false);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    const raf = requestAnimationFrame(() => setVisible(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  function handleClose() {
+    setVisible(false);
+    setTimeout(onClose, 200);
+  }
+
+  if (!mounted) return null;
+
+  return createPortal(
+    <div
+      className={`fixed inset-0 z-[100] bg-black/40 transition-opacity duration-200 ${visible ? "opacity-100" : "opacity-0"}`}
+      onClick={handleClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className={`h-full w-[min(85vw,340px)] overflow-y-auto bg-white shadow-xl transition-transform duration-200 ease-out ${
+          visible ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="flex items-center justify-between border-b border-black/10 px-5 py-4">
+          <span className="text-xl font-extrabold tracking-tight text-primary">ODTSI</span>
+          <button type="button" onClick={handleClose} aria-label="Close menu" className="text-[#4A4844]">
+            <X size={22} />
+          </button>
+        </div>
+
+        <div className="flex flex-col gap-1 p-3">
+          <Link
+            href="/wallet"
+            onClick={handleClose}
+            className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-[#16161A] hover:bg-[#F6F5F3]"
+          >
+            <Wallet size={20} className="text-primary" />
+            Wallet
+          </Link>
+          <Link
+            href="/wishlist"
+            onClick={handleClose}
+            className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-[#16161A] hover:bg-[#F6F5F3]"
+          >
+            <Heart size={20} className="text-primary" />
+            Wishlist
+            {wishlistCount > 0 && (
+              <span className="ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-action px-1 text-[11px] font-extrabold text-action-ink">
+                {wishlistCount > 99 ? "99+" : wishlistCount}
+              </span>
+            )}
+          </Link>
+          <Link
+            href="/account"
+            onClick={handleClose}
+            className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-[#16161A] hover:bg-[#F6F5F3]"
+          >
+            <User size={20} className="text-primary" />
+            Account
+          </Link>
+          <Link
+            href="/contact"
+            onClick={handleClose}
+            className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-[#16161A] hover:bg-[#F6F5F3]"
+          >
+            <Brain size={20} className="text-primary" />
+            Need to Talk
+          </Link>
+        </div>
+
+        <div className="border-t border-black/10 p-3">
+          <p className="px-3 pb-2 text-xs font-bold uppercase tracking-wide text-[#8B8880]">Shop</p>
+          {QUICK_LINKS.map(({ label, href, icon: Icon }) => (
+            <Link
+              key={href}
+              href={href}
+              onClick={handleClose}
+              className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-[#16161A] hover:bg-[#F6F5F3]"
+            >
+              <Icon size={20} className="text-primary" />
+              {label}
+            </Link>
+          ))}
+        </div>
+
+        {categories.length > 0 && (
+          <div className="border-t border-black/10 p-5">
+            <p className="pb-3 text-xs font-bold uppercase tracking-wide text-[#8B8880]">All Categories</p>
+            <div className="grid grid-cols-3 gap-x-3 gap-y-5">
+              {categories.map((category) => (
+                <Link
+                  key={category.slug}
+                  href={`/category/${category.slug}`}
+                  onClick={handleClose}
+                  className="flex flex-col items-center gap-2 text-center"
+                >
+                  <span className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-primary-light">
+                    {category.imageUrl ? (
+                      <Image src={category.imageUrl} alt="" width={56} height={56} className="h-full w-full object-cover" />
+                    ) : null}
+                  </span>
+                  <span className="text-xs font-semibold leading-tight text-[#3A3835]">{category.name}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
 export function Navbar({ categories }: { categories: Category[] }) {
   const row2Visible = useRow2Visible();
   const { items: cartItems } = useCart();
   const { items: wishlistItems } = useWishlist();
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-50 bg-primary shadow-sm">
       {/* Row 1 — mobile: menu, logo, cart, account. Desktop: full bar with search + currency + icons. Always visible. */}
       <div className="flex items-center gap-4 bg-primary px-4 py-3 sm:gap-5 sm:px-[20px] sm:py-4">
-        <button type="button" aria-label="Open menu" className="text-white sm:hidden">
+        <button
+          type="button"
+          aria-label="Open menu"
+          onClick={() => setMobileMenuOpen(true)}
+          className="text-white sm:hidden"
+        >
           <Menu size={24} />
         </button>
 
@@ -279,6 +416,14 @@ export function Navbar({ categories }: { categories: Category[] }) {
             </div>
         </div>
       </div>
+
+      {mobileMenuOpen && (
+        <MobileMenu
+          categories={categories}
+          wishlistCount={wishlistItems.length}
+          onClose={() => setMobileMenuOpen(false)}
+        />
+      )}
     </header>
   );
 }
