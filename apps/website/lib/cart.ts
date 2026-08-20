@@ -7,6 +7,10 @@ export interface CartItem {
   slug: string;
   name: string;
   price: number;
+  // Captured from the product at add time — a shop can only really have one
+  // active base currency, but this keeps each line's price legible on its
+  // own instead of assuming whatever the page currently shows is right.
+  currency: string;
   imageUrl: string;
   quantity: number;
   // When this line came from a pack/bundle (e.g. "buy 4"), the quantity

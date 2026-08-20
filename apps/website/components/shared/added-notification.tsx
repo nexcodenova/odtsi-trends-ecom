@@ -58,7 +58,7 @@ export function AddedNotification() {
           </div>
           <div className="min-w-0 flex-1">
             <p className="line-clamp-2 text-sm font-semibold text-[#16161A]">{detail.name}</p>
-            <Price amount={detail.price} className="mt-1 block text-sm font-extrabold text-primary" />
+            <Price amount={detail.price} currency={detail.currency} className="mt-1 block text-sm font-extrabold text-primary" />
           </div>
         </div>
 
@@ -67,7 +67,7 @@ export function AddedNotification() {
             <span className="text-[#716D67]">
               You have {cartCount} item{cartCount === 1 ? "" : "s"} in your cart
             </span>
-            <Price amount={subtotal} className="font-extrabold text-[#16161A]" />
+            <Price amount={subtotal} currency={items[0]?.currency ?? detail.currency} className="font-extrabold text-[#16161A]" />
           </div>
         )}
 

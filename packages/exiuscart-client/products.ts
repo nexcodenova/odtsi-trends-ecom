@@ -1,5 +1,5 @@
 import { storeUrl } from "./config";
-import type { Product, QuantityTier, ProductVideo } from "./types";
+import type { Product, ProductVariant, QuantityTier, ProductVideo } from "./types";
 
 interface RawQuantityTier {
   quantity: number;
@@ -8,6 +8,18 @@ interface RawQuantityTier {
   badge: string | null;
   badge_type: "save" | "popular" | "value" | null;
   recommended: boolean;
+}
+
+interface RawVariant {
+  id: number;
+  size: string | null;
+  color: string | null;
+  color_hex: string | null;
+  sku: string;
+  quantity: number;
+  in_stock: boolean;
+  price: number;
+  image_url: string;
 }
 
 interface RawVideo {
@@ -27,6 +39,9 @@ interface RawProduct {
   name: string;
   slug: string;
   description: string | null;
+  // Optional — older responses (before ExiusCart added this field) won't
+  // have it, so this falls back to USD rather than crash on a missing key.
+  currency?: string;
   price: number;
   compare_at_price: number | null;
   in_stock: boolean;
@@ -37,6 +52,9 @@ interface RawProduct {
   video_url: string | null;
   videos: RawVideo[];
   quantity_tiers: RawQuantityTier[];
+  // Optional for the same reason as currency — not every product has
+  // color/size options, and older responses won't have the field at all.
+  variants?: RawVariant[];
   tags: string[];
   category_id: number | null;
   custom_fields: Record<string, unknown>;
@@ -44,6 +62,20 @@ interface RawProduct {
   // whether or not the field is present in the response.
   view_count?: number;
   units_sold?: number;
+}
+
+function mapVariants(raw: RawVariant[] | undefined): ProductVariant[] {
+  return (raw ?? []).map((v) => ({
+    id: String(v.id),
+    size: v.size,
+    color: v.color,
+    colorHex: v.color_hex,
+    sku: v.sku,
+    stockCount: v.quantity,
+    inStock: v.in_stock,
+    price: v.price,
+    imageUrl: v.image_url,
+  }));
 }
 
 function mapQuantityTiers(raw: RawQuantityTier[] | undefined): QuantityTier[] {
@@ -87,11 +119,8 @@ function mapProduct(raw: RawProduct): Product {
     description: raw.description,
     price: raw.price,
     compareAtPrice: raw.compare_at_price,
-    // ExiusCart hasn't returned a currency field yet — confirmed EUR by
-    // comparing raw API prices against the ExiusCart dashboard's own EUR
-    // vs USD columns (the USD figures there are exactly EUR × the real
-    // EUR→USD rate), same base currency assumed everywhere else.
-    currency: "EUR",
+    // Real field from ExiusCart now — shown as-is, not assumed or converted.
+    currency: raw.currency ?? "USD",
     imageUrl: raw.images[0] ?? "",
     images: raw.images,
     videos: mapVideos(raw),
@@ -113,6 +142,7 @@ function mapProduct(raw: RawProduct): Product {
     // sent the field at all, so "0" is never confused with "not available".
     viewCount: raw.view_count ?? null,
     unitsSold: raw.units_sold ?? null,
+    variants: mapVariants(raw.variants),
   };
 }
 

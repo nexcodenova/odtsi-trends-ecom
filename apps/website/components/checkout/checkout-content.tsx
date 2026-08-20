@@ -9,7 +9,8 @@ import { saveOrderRecord } from "@/lib/order-history";
 
 export function CheckoutContent() {
   const { items, subtotal } = useCart();
-  const price = (amount: number) => formatCurrency(amount, "USD");
+  const subtotalCurrency = items[0]?.currency ?? "USD";
+  const price = (amount: number) => formatCurrency(amount, subtotalCurrency);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -107,7 +108,7 @@ export function CheckoutContent() {
                 <span className="text-[#4A4844]">
                   {item.name} <span className="text-[#8B8880]">×{item.quantity}</span>
                 </span>
-                <span className="font-bold text-[#16161A]">{price(item.price * item.quantity)}</span>
+                <span className="font-bold text-[#16161A]">{formatCurrency(item.price * item.quantity, item.currency)}</span>
               </div>
             ))}
           </div>

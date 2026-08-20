@@ -17,8 +17,8 @@ const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["600", "700"] 
 const BADGE_STYLE = "bg-action text-action-ink";
 
 // Big whole-dollar amount, small symbol/decimal, in the distinct display face.
-function BigPrice({ amount }: { amount: number }) {
-  const { symbol, whole, decimal } = formatCurrencyParts(amount, "USD");
+function BigPrice({ amount, currency }: { amount: number; currency: string }) {
+  const { symbol, whole, decimal } = formatCurrencyParts(amount, currency);
   return (
     <span className={`${spaceGrotesk.className} text-[#16161A]`}>
       <span className="align-top text-sm">{symbol}</span>
@@ -33,7 +33,7 @@ function BigPrice({ amount }: { amount: number }) {
 // in AddToCartSection. Only the selected card's bundle × its own stepper
 // value is what Add to Cart here actually adds.
 export function PackSelector({ product }: { product: Product }) {
-  const price = (amount: number) => formatCurrency(amount, "USD");
+  const price = (amount: number) => formatCurrency(amount, product.currency);
 
   const defaultTierIndex = Math.max(0, product.quantityTiers.findIndex((t) => t.recommended));
   const [selectedTier, setSelectedTier] = useState(defaultTierIndex === -1 ? 0 : defaultTierIndex);
@@ -63,6 +63,7 @@ export function PackSelector({ product }: { product: Product }) {
         slug: product.slug,
         name: packName,
         price: tier.price / tier.quantity,
+        currency: product.currency,
         imageUrl: product.imageUrl,
         step: tier.quantity,
         variantId: `tier-${tier.quantity}`,
@@ -74,6 +75,7 @@ export function PackSelector({ product }: { product: Product }) {
       name: packName,
       imageUrl: product.imageUrl,
       price: tier.price * multiplier,
+      currency: product.currency,
     });
     setJustAdded(true);
     setTimeout(() => setJustAdded(false), 2000);
@@ -139,7 +141,7 @@ export function PackSelector({ product }: { product: Product }) {
               <div className="flex items-center justify-between gap-3 pr-7">
                 <p className="text-lg font-extrabold text-[#16161A]">{tier.label ?? `Buy ${tier.quantity}`}</p>
                 <div className="flex items-baseline gap-2">
-                  <BigPrice amount={tier.price * multiplier} />
+                  <BigPrice amount={tier.price * multiplier} currency={product.currency} />
                   {savings > 0 && (
                     <span className="text-xs text-[#a3a19c] line-through">{price(compareTotal * multiplier)}</span>
                   )}

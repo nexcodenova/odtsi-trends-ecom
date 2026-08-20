@@ -11,7 +11,6 @@ import { formatCurrency } from "@odtsi/utils";
 
 export function WishlistContent() {
   const { items } = useWishlist();
-  const price = (amount: number) => formatCurrency(amount, "USD");
 
   if (items.length === 0) {
     return (
@@ -52,14 +51,14 @@ export function WishlistContent() {
                 {item.imageUrl ? <Image src={item.imageUrl} alt={item.name} fill className="object-cover" /> : null}
               </div>
               <p className="mt-3 line-clamp-2 text-sm font-semibold text-[#16161A]">{item.name}</p>
-              <p className="mt-1 text-sm font-extrabold text-primary">{price(item.price)}</p>
+              <p className="mt-1 text-sm font-extrabold text-primary">{formatCurrency(item.price, item.currency)}</p>
             </Link>
 
             <button
               type="button"
               onClick={() => {
-                addToCart({ productId: item.productId, slug: item.slug, name: item.name, price: item.price, imageUrl: item.imageUrl });
-                notifyAdded({ type: "cart", name: item.name, imageUrl: item.imageUrl, price: item.price });
+                addToCart({ productId: item.productId, slug: item.slug, name: item.name, price: item.price, currency: item.currency, imageUrl: item.imageUrl });
+                notifyAdded({ type: "cart", name: item.name, imageUrl: item.imageUrl, price: item.price, currency: item.currency });
               }}
               className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-[#F6C935] to-[#C99200] text-xs font-extrabold text-[#16161A] transition hover:brightness-105"
             >

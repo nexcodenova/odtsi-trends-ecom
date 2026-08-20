@@ -41,8 +41,8 @@ export function ProductCard({ product }: ProductCardProps) {
   }, [product.id]);
 
   function handleAdd() {
-    addToCart({ productId: product.id, slug: product.slug, name: product.name, price: product.price, imageUrl: product.imageUrl });
-    notifyAdded({ type: "cart", name: product.name, imageUrl: product.imageUrl, price: product.price });
+    addToCart({ productId: product.id, slug: product.slug, name: product.name, price: product.price, currency: product.currency, imageUrl: product.imageUrl });
+    notifyAdded({ type: "cart", name: product.name, imageUrl: product.imageUrl, price: product.price, currency: product.currency });
     setJustAdded(true);
     setTimeout(() => setJustAdded(false), 1500);
   }
@@ -55,11 +55,12 @@ export function ProductCard({ product }: ProductCardProps) {
       slug: product.slug,
       name: product.name,
       price: product.price,
+      currency: product.currency,
       imageUrl: product.imageUrl,
     });
     setSaved(nowSaved);
     if (nowSaved) {
-      notifyAdded({ type: "wishlist", name: product.name, imageUrl: product.imageUrl, price: product.price });
+      notifyAdded({ type: "wishlist", name: product.name, imageUrl: product.imageUrl, price: product.price, currency: product.currency });
     }
   }
 
@@ -131,9 +132,9 @@ export function ProductCard({ product }: ProductCardProps) {
 
         <div className="mt-2 flex flex-wrap items-baseline gap-2">
           {hasDiscount && (
-            <Price amount={product.compareAtPrice!} className="text-sm text-[#a3a19c] line-through" />
+            <Price amount={product.compareAtPrice!} currency={product.currency} className="text-sm text-[#a3a19c] line-through" />
           )}
-          <Price amount={product.price} className="text-xl font-extrabold text-primary" />
+          <Price amount={product.price} currency={product.currency} className="text-xl font-extrabold text-primary" />
           {hasDiscount && (
             <span className="rounded-full bg-action px-2.5 py-1 text-xs font-extrabold text-action-ink">
               -{discountPct}%
@@ -144,7 +145,7 @@ export function ProductCard({ product }: ProductCardProps) {
         {deal && (
           <p className="mt-1.5 flex items-center gap-1 text-xs font-bold text-status">
             <Gift size={14} />
-            Buy {deal.tier.quantity}, save <Price amount={deal.savings} />
+            Buy {deal.tier.quantity}, save <Price amount={deal.savings} currency={product.currency} />
           </p>
         )}
       </Link>

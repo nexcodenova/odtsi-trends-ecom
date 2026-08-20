@@ -78,6 +78,21 @@ export interface ProductVideo {
   embedHtml: string | null;
 }
 
+export interface ProductVariant {
+  id: string;
+  // Both nullable — a product can vary by size only, color only, or both.
+  size: string | null;
+  color: string | null;
+  colorHex: string | null;
+  sku: string;
+  stockCount: number;
+  inStock: boolean;
+  // Each variant has its own real price and image — different sizes of the
+  // same product are frequently priced differently (e.g. 2XL/3XL upcharges).
+  price: number;
+  imageUrl: string;
+}
+
 export interface Product {
   id: string;
   slug: string;
@@ -112,6 +127,8 @@ export interface Product {
   // exist there. Never estimated, multiplied, or padded on this side.
   viewCount: number | null;
   unitsSold: number | null;
+  // Real color/size options only — empty for products that don't vary.
+  variants: ProductVariant[];
 }
 
 export interface CartItem {

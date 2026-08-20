@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { ImageLens } from "@/components/product/image-lens";
+import { VARIANT_IMAGE_EVENT, type VariantImageDetail } from "@/lib/notify";
 
 interface ProductGalleryProps {
   images: string[];
@@ -17,19 +18,36 @@ const MAX_RAIL_THUMBS = 6;
 
 export function ProductGallery({ images, productName, badge }: ProductGalleryProps) {
   const [active, setActive] = useState(0);
-  const activeImage = images[active] ?? images[0];
+  // Set when a color/size variant is picked in AddToCartSection (a sibling,
+  // not a parent/child, so this arrives via event rather than a prop) —
+  // takes over the main display until the shopper clicks a thumbnail again.
+  const [variantImage, setVariantImage] = useState<string | null>(null);
+  const activeImage = variantImage ?? images[active] ?? images[0];
   const railImages = images.slice(0, MAX_RAIL_THUMBS);
   const overflowImages = images.slice(MAX_RAIL_THUMBS);
+
+  useEffect(() => {
+    function handle(e: Event) {
+      setVariantImage((e as CustomEvent<VariantImageDetail>).detail.imageUrl);
+    }
+    window.addEventListener(VARIANT_IMAGE_EVENT, handle);
+    return () => window.removeEventListener(VARIANT_IMAGE_EVENT, handle);
+  }, []);
+
+  function selectThumb(i: number) {
+    setActive(i);
+    setVariantImage(null);
+  }
 
   function renderThumb(src: string, i: number) {
     return (
       <button
         key={src}
         type="button"
-        onClick={() => setActive(i)}
+        onClick={() => selectThumb(i)}
         aria-label={`View image ${i + 1}`}
         className={`relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-xl border-2 bg-primary-light transition ${
-          i === active ? "border-action" : "border-transparent"
+          i === active && !variantImage ? "border-action" : "border-transparent"
         }`}
       >
         <Image src={src} alt="" fill className="object-cover" />

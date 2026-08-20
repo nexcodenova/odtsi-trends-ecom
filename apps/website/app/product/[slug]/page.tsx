@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ShieldCheck, Truck, RotateCcw } from "lucide-react";
 import { getProduct, getReviews, type ProductReview } from "@odtsi/exiuscart-client";
-import { Price } from "@/components/shared/price";
 import { ProductGallery } from "@/components/product/product-gallery";
 import { FeatureHighlights } from "@/components/product/feature-highlights";
 import { AddToCartSection } from "@/components/product/add-to-cart-section";
@@ -48,7 +47,6 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   }
 
   const hasDiscount = product.compareAtPrice !== null && product.compareAtPrice > product.price;
-  const savings = hasDiscount ? product.compareAtPrice! - product.price : 0;
   const galleryImages = product.images.length > 0 ? product.images : product.imageUrl ? [product.imageUrl] : [];
   const discountBadge = hasDiscount
     ? `-${Math.round((1 - product.price / product.compareAtPrice!) * 100)}% Today`
@@ -95,23 +93,9 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           </h1>
           {product.tagline && <p className="mt-1.5 text-[14px] text-[#8B8880]">{product.tagline}</p>}
 
-          <div className="mt-4 flex flex-wrap items-center gap-3">
-            {hasDiscount && (
-              <Price amount={product.compareAtPrice!} className="text-base text-[#a3a19c] line-through" />
-            )}
-            <Price amount={product.price} className="text-[30px] font-extrabold text-[#16161A]" />
-            {hasDiscount && (
-              <span className="animate-float rounded-full bg-action px-3 py-1 text-xs font-extrabold text-action-ink shadow-[0_4px_12px_-4px_rgba(242,183,5,0.6)]">
-                Save <Price amount={savings} />
-              </span>
-            )}
+          <div className="mt-4">
+            <AddToCartSection product={product} />
           </div>
-
-          <p className="mt-2 text-sm font-bold text-status">
-            {product.inStock ? "In Stock — Order Now Before It's Gone" : "Out of Stock"}
-          </p>
-
-          <AddToCartSection product={product} />
 
           <div className="mt-5 grid grid-cols-3 gap-3 border-y border-black/5 py-5">
             {BENEFITS.map(({ icon: Icon, label }) => (

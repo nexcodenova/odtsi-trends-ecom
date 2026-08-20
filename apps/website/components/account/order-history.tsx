@@ -61,7 +61,7 @@ export function OrderHistory() {
               >
                 <div>
                   <p className="text-sm font-extrabold text-[#16161A]">{order.orderNumber}</p>
-                  <Price amount={order.total} className="text-sm text-[#716D67]" />
+                  <Price amount={order.total} currency={order.currency} className="text-sm text-[#716D67]" />
                 </div>
                 <span className={`rounded-full px-3 py-1 text-xs font-bold capitalize ${STATUS_STYLE[order.status]}`}>
                   {order.status}

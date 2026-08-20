@@ -9,7 +9,9 @@ import { formatCurrency } from "@odtsi/utils";
 
 export function CartContent() {
   const { items, subtotal } = useCart();
-  const price = (amount: number) => formatCurrency(amount, "USD");
+  // A shop only really has one active base currency, so the subtotal
+  // borrows the first line's — each line still shows its own regardless.
+  const subtotalCurrency = items[0]?.currency ?? "USD";
 
   if (items.length === 0) {
     return (
@@ -47,7 +49,7 @@ export function CartContent() {
               <Link href={`/product/${item.slug}`} className="line-clamp-2 text-sm font-semibold text-[#16161A] hover:text-primary">
                 {item.name}
               </Link>
-              <p className="mt-1 text-sm font-extrabold text-primary">{price(item.price)}</p>
+              <p className="mt-1 text-sm font-extrabold text-primary">{formatCurrency(item.price, item.currency)}</p>
               {item.step && item.step > 1 && <p className="mt-0.5 text-xs text-[#8B8880]">Pack of {item.step}</p>}
             </div>
 
@@ -85,7 +87,7 @@ export function CartContent() {
 
       <div className="mt-8 flex items-center justify-between border-t border-black/10 pt-6">
         <span className="text-base font-bold text-[#16161A]">Subtotal</span>
-        <span className="text-xl font-extrabold text-primary">{price(subtotal)}</span>
+        <span className="text-xl font-extrabold text-primary">{formatCurrency(subtotal, subtotalCurrency)}</span>
       </div>
 
       <Link

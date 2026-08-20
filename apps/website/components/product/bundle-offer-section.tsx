@@ -16,14 +16,15 @@ interface BundleOfferSectionProps {
 // here. Adding the bundle just adds each item at its normal price; the
 // discount lands once ExiusCart recognizes the combination at checkout.
 export function BundleOfferSection({ product, bundle }: BundleOfferSectionProps) {
-  const price = (amount: number) => formatCurrency(amount, "USD");
+  const price = (amount: number) => formatCurrency(amount, product.currency);
 
   const savings = bundle.regularTotal - bundle.bundlePrice;
 
   function handleAddBundle() {
-    addToCart({ productId: product.id, slug: product.slug, name: product.name, price: product.price, imageUrl: product.imageUrl });
+    addToCart({ productId: product.id, slug: product.slug, name: product.name, price: product.price, currency: product.currency, imageUrl: product.imageUrl });
     for (const item of bundle.items) {
-      addToCart({ productId: item.productId, slug: item.slug, name: item.name, price: item.price, imageUrl: item.imageUrl });
+      // Same shop as the main product, so the same currency applies.
+      addToCart({ productId: item.productId, slug: item.slug, name: item.name, price: item.price, currency: product.currency, imageUrl: item.imageUrl });
     }
   }
 

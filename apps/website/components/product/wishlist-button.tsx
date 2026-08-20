@@ -21,11 +21,12 @@ export function WishlistButton({ product }: { product: Product }) {
       slug: product.slug,
       name: product.name,
       price: product.price,
+      currency: product.currency,
       imageUrl: product.imageUrl,
     });
     setSaved(nowSaved);
     if (nowSaved) {
-      notifyAdded({ type: "wishlist", name: product.name, imageUrl: product.imageUrl, price: product.price });
+      notifyAdded({ type: "wishlist", name: product.name, imageUrl: product.imageUrl, price: product.price, currency: product.currency });
     }
   }
 
