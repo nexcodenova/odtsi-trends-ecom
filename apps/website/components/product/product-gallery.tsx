@@ -59,7 +59,7 @@ export function ProductGallery({ images, productName, badge }: ProductGalleryPro
     <div>
       <div style={{ display: "grid", gridTemplateColumns: images.length > 1 ? "78px 1fr" : "1fr", gap: 14 }}>
         {images.length > 1 && (
-          <div className="flex h-full flex-col justify-between gap-2.5">
+          <div className="flex h-full flex-col justify-between gap-2">
             {railImages.map((src, i) => renderThumb(src, i))}
           </div>
         )}
@@ -83,7 +83,7 @@ export function ProductGallery({ images, productName, badge }: ProductGalleryPro
       </div>
 
       {overflowImages.length > 0 && (
-        <div className="mt-3.5 flex gap-2.5 overflow-x-auto pb-1">
+        <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
           {overflowImages.map((src, i) => renderThumb(src, MAX_RAIL_THUMBS + i))}
         </div>
       )}
