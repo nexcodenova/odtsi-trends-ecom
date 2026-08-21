@@ -56,34 +56,48 @@ export function ProductGallery({ images, productName, badge }: ProductGalleryPro
   }
 
   return (
-    <div>
-      <div style={{ display: "grid", gridTemplateColumns: images.length > 1 ? "78px 1fr" : "1fr", gap: 14 }}>
-        {images.length > 1 && (
-          <div className="flex h-full flex-col justify-between gap-2">
-            {railImages.map((src, i) => renderThumb(src, i))}
-          </div>
-        )}
-
-        <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-gradient-to-br from-[#232323] to-[#060606]">
-          {activeImage ? (
-            <ImageLens src={activeImage}>
-              <Image src={activeImage} alt={productName} fill priority className="object-cover" />
-            </ImageLens>
-          ) : (
-            <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold tracking-wide text-white/25">
-              ◇ photo goes here
-            </span>
-          )}
-          {badge && (
-            <span className="absolute left-3.5 top-3.5 rounded-full bg-action px-3 py-1.5 text-[11px] font-extrabold text-[#16161A]">
-              {badge}
-            </span>
-          )}
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: images.length > 1 ? "78px 1fr" : "1fr",
+        columnGap: 14,
+        // Same 6px used between the rail thumbnails themselves, so the row
+        // below the main image sits exactly as close as the rail images do.
+        rowGap: 6,
+      }}
+    >
+      {images.length > 1 && (
+        // No justify-between — that stretched to fill the rail's full
+        // height (matching the tall main image), which overrode gap-* with
+        // whatever space-between computed instead of the fixed value.
+        <div className="flex flex-col gap-1.5">
+          {railImages.map((src, i) => renderThumb(src, i))}
         </div>
+      )}
+
+      <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-gradient-to-br from-[#232323] to-[#060606]">
+        {activeImage ? (
+          <ImageLens src={activeImage}>
+            <Image src={activeImage} alt={productName} fill priority className="object-cover" />
+          </ImageLens>
+        ) : (
+          <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold tracking-wide text-white/25">
+            ◇ photo goes here
+          </span>
+        )}
+        {badge && (
+          <span className="absolute left-3.5 top-3.5 rounded-full bg-action px-3 py-1.5 text-[11px] font-extrabold text-[#16161A]">
+            {badge}
+          </span>
+        )}
       </div>
 
+      {/* Same grid column as the main image, not the rail — its left edge
+          lines up with the main image's, not the narrower rail's, and the
+          gap above it comes from the grid's own row gap, same value the
+          rail thumbnails use, instead of a separately chosen margin. */}
       {overflowImages.length > 0 && (
-        <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+        <div style={{ gridColumn: images.length > 1 ? 2 : 1 }} className="flex gap-1.5 overflow-x-auto pb-1">
           {overflowImages.map((src, i) => renderThumb(src, MAX_RAIL_THUMBS + i))}
         </div>
       )}
