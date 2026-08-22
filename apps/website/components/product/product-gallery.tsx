@@ -70,7 +70,10 @@ export function ProductGallery({ images, productName, badge }: ProductGalleryPro
         // No justify-between — that stretched to fill the rail's full
         // height (matching the tall main image), which overrode gap-* with
         // whatever space-between computed instead of the fixed value.
-        <div className="flex flex-col gap-1.5">
+        // justify-center instead of packing at the top: with fewer
+        // thumbnails than fit the main image's height, that left a big
+        // empty gap at the bottom — centering balances it above and below.
+        <div className="flex h-full flex-col justify-center gap-1.5">
           {railImages.map((src, i) => renderThumb(src, i))}
         </div>
       )}
