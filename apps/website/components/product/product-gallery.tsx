@@ -46,7 +46,7 @@ export function ProductGallery({ images, productName, badge }: ProductGalleryPro
         type="button"
         onClick={() => selectThumb(i)}
         aria-label={`View image ${i + 1}`}
-        className={`relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl border-2 bg-primary-light transition ${
+        className={`relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-xl border-2 bg-primary-light transition sm:h-20 sm:w-20 ${
           i === active && !variantImage ? "border-action" : "border-transparent"
         }`}
       >
@@ -57,12 +57,9 @@ export function ProductGallery({ images, productName, badge }: ProductGalleryPro
 
   return (
     <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: images.length > 1 ? "84px 1fr" : "1fr",
-        columnGap: 14,
-        rowGap: 8,
-      }}
+      className={`grid gap-x-[10px] gap-y-2 sm:gap-x-[14px] ${
+        images.length > 1 ? "grid-cols-[56px_1fr] sm:grid-cols-[84px_1fr]" : "grid-cols-1"
+      }`}
     >
       {images.length > 1 && (
         // justify-between: first thumbnail flush with the main image's top
