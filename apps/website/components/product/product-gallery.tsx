@@ -46,7 +46,7 @@ export function ProductGallery({ images, productName, badge }: ProductGalleryPro
         type="button"
         onClick={() => selectThumb(i)}
         aria-label={`View image ${i + 1}`}
-        className={`relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-xl border-2 bg-primary-light transition ${
+        className={`relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl border-2 bg-primary-light transition ${
           i === active && !variantImage ? "border-action" : "border-transparent"
         }`}
       >
@@ -59,26 +59,22 @@ export function ProductGallery({ images, productName, badge }: ProductGalleryPro
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: images.length > 1 ? "78px 1fr" : "1fr",
+        gridTemplateColumns: images.length > 1 ? "84px 1fr" : "1fr",
         columnGap: 14,
-        // Same 6px used between the rail thumbnails themselves, so the row
-        // below the main image sits exactly as close as the rail images do.
-        rowGap: 6,
+        rowGap: 8,
       }}
     >
       {images.length > 1 && (
-        // No justify-between — that stretched to fill the rail's full
-        // height (matching the tall main image), which overrode gap-* with
-        // whatever space-between computed instead of the fixed value.
-        // justify-center instead of packing at the top: with fewer
-        // thumbnails than fit the main image's height, that left a big
-        // empty gap at the bottom — centering balances it above and below.
-        <div className="flex h-full flex-col justify-center gap-1.5">
+        // justify-between: first thumbnail flush with the main image's top
+        // corner, last one flush with its bottom corner, everything between
+        // auto-spaced with equal gaps — not a fixed gap-* value, since the
+        // right gap size depends on how many thumbnails there are.
+        <div className="flex h-full flex-col justify-between">
           {railImages.map((src, i) => renderThumb(src, i))}
         </div>
       )}
 
-      <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-gradient-to-br from-[#232323] to-[#060606]">
+      <div className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-gradient-to-br from-[#232323] to-[#060606] sm:aspect-[4/5]">
         {activeImage ? (
           <ImageLens src={activeImage}>
             <Image src={activeImage} alt={productName} fill priority className="object-cover" />
@@ -96,11 +92,9 @@ export function ProductGallery({ images, productName, badge }: ProductGalleryPro
       </div>
 
       {/* Same grid column as the main image, not the rail — its left edge
-          lines up with the main image's, not the narrower rail's, and the
-          gap above it comes from the grid's own row gap, same value the
-          rail thumbnails use, instead of a separately chosen margin. */}
+          lines up with the main image's, not the narrower rail's. */}
       {overflowImages.length > 0 && (
-        <div style={{ gridColumn: images.length > 1 ? 2 : 1 }} className="flex gap-1.5 overflow-x-auto pb-1">
+        <div style={{ gridColumn: images.length > 1 ? 2 : 1 }} className="flex gap-2 overflow-x-auto pb-1">
           {overflowImages.map((src, i) => renderThumb(src, MAX_RAIL_THUMBS + i))}
         </div>
       )}
