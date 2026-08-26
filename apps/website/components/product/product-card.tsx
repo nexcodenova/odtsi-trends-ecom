@@ -9,6 +9,7 @@ import { Price } from "@/components/shared/price";
 import { addToCart } from "@/lib/cart";
 import { isInWishlist, toggleWishlist } from "@/lib/wishlist";
 import { notifyAdded } from "@/lib/notify";
+import { cheapestVariant, displayPrice } from "@/lib/product-price";
 
 interface ProductCardProps {
   product: Product;
@@ -16,10 +17,10 @@ interface ProductCardProps {
 
 // Best real multi-buy saving on this product, if any tier is actually
 // cheaper per-unit than buying single units at the base price.
-function bestTierDeal(product: Product): { tier: QuantityTier; savings: number } | null {
+function bestTierDeal(product: Product, price: number): { tier: QuantityTier; savings: number } | null {
   let best: { tier: QuantityTier; savings: number } | null = null;
   for (const tier of product.quantityTiers) {
-    const savings = product.price * tier.quantity - tier.price;
+    const savings = price * tier.quantity - tier.price;
     if (savings > 0 && (!best || savings > best.savings)) {
       best = { tier, savings };
     }
@@ -31,9 +32,12 @@ export function ProductCard({ product }: ProductCardProps) {
   const [justAdded, setJustAdded] = useState(false);
   // Starts false on the server (no localStorage there) and syncs on mount.
   const [saved, setSaved] = useState(false);
-  const hasDiscount = product.compareAtPrice !== null && product.compareAtPrice > product.price;
-  const discountPct = hasDiscount ? Math.round((1 - product.price / product.compareAtPrice!) * 100) : 0;
-  const deal = bestTierDeal(product);
+  const variant = cheapestVariant(product);
+  const price = displayPrice(product);
+  const imageUrl = variant?.imageUrl || product.imageUrl;
+  const hasDiscount = product.compareAtPrice !== null && product.compareAtPrice > price;
+  const discountPct = hasDiscount ? Math.round((1 - price / product.compareAtPrice!) * 100) : 0;
+  const deal = bestTierDeal(product, price);
   const secondImageUrl = product.images.find((url) => url !== product.imageUrl) ?? null;
 
   useEffect(() => {
@@ -41,8 +45,8 @@ export function ProductCard({ product }: ProductCardProps) {
   }, [product.id]);
 
   function handleAdd() {
-    addToCart({ productId: product.id, slug: product.slug, name: product.name, price: product.price, currency: product.currency, imageUrl: product.imageUrl });
-    notifyAdded({ type: "cart", name: product.name, imageUrl: product.imageUrl, price: product.price, currency: product.currency });
+    addToCart({ productId: product.id, slug: product.slug, name: product.name, price, currency: product.currency, imageUrl, variantId: variant?.sku });
+    notifyAdded({ type: "cart", name: product.name, imageUrl, price, currency: product.currency });
     setJustAdded(true);
     setTimeout(() => setJustAdded(false), 1500);
   }
@@ -54,13 +58,13 @@ export function ProductCard({ product }: ProductCardProps) {
       productId: product.id,
       slug: product.slug,
       name: product.name,
-      price: product.price,
+      price,
       currency: product.currency,
-      imageUrl: product.imageUrl,
+      imageUrl,
     });
     setSaved(nowSaved);
     if (nowSaved) {
-      notifyAdded({ type: "wishlist", name: product.name, imageUrl: product.imageUrl, price: product.price, currency: product.currency });
+      notifyAdded({ type: "wishlist", name: product.name, imageUrl, price, currency: product.currency });
     }
   }
 
@@ -134,7 +138,7 @@ export function ProductCard({ product }: ProductCardProps) {
           {hasDiscount && (
             <Price amount={product.compareAtPrice!} currency={product.currency} className="text-sm text-[#a3a19c] line-through" />
           )}
-          <Price amount={product.price} currency={product.currency} className="text-xl font-extrabold text-primary" />
+          <Price amount={price} currency={product.currency} className="text-xl font-extrabold text-primary" />
           {hasDiscount && (
             <span className="rounded-full bg-action px-2.5 py-1 text-xs font-extrabold text-action-ink">
               -{discountPct}%

@@ -7,10 +7,7 @@ import { addToCart } from "@/lib/cart";
 import { notifyAdded, notifyVariantImage } from "@/lib/notify";
 import { WishlistButton } from "@/components/product/wishlist-button";
 import { Price } from "@/components/shared/price";
-
-function firstInStockVariant(variants: ProductVariant[]): ProductVariant | null {
-  return variants.find((v) => v.inStock) ?? variants[0] ?? null;
-}
+import { cheapestVariant } from "@/lib/product-price";
 
 // Price, stock, color/size picker, quantity, and Add to Cart all live here
 // together — once a variant is selected, the price and stock shown above
@@ -18,8 +15,12 @@ function firstInStockVariant(variants: ProductVariant[]): ProductVariant | null 
 // page anymore.
 export function AddToCartSection({ product }: { product: Product }) {
   const hasVariants = product.variants.length > 0;
+  // Same cheapest-in-stock pick used for the listing card's price — the
+  // product page needs to default to whatever price the shopper already
+  // saw before clicking through, not just whichever variant sits first in
+  // the array (confirmed on a real product where those didn't match).
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(() =>
-    hasVariants ? firstInStockVariant(product.variants) : null,
+    hasVariants ? cheapestVariant(product) : null,
   );
   const [quantity, setQuantity] = useState(1);
   const [justAdded, setJustAdded] = useState(false);
