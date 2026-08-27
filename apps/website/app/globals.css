@@ -22,3 +22,16 @@ body {
 .animate-float {
   animation: float-y 2.2s ease-in-out infinite;
 }
+
+/* Slow continuous rotation — the "scanning" ring around the 404 badge.
+   Tailwind's built-in animate-spin (1s) is far too fast for a decorative
+   ring meant to sit quietly in the background. */
+@keyframes spin-slow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 7s linear infinite;
+}
