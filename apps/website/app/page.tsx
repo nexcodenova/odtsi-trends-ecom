@@ -2,6 +2,7 @@ import { HeroCarousel, type HeroSlide } from "@/components/home/hero";
 import { CategoryGrid } from "@/components/home/category-grid";
 import { TrendingProducts } from "@/components/home/trending-products";
 import { WeeklyEdit } from "@/components/home/weekly-edit";
+import { MostViewed } from "@/components/home/most-viewed";
 import { WhyOdtsi } from "@/components/home/why-odtsi";
 import { ConnectSection } from "@/components/home/connect-section";
 import { getCategories, type Category } from "@odtsi/exiuscart-client";
@@ -42,6 +43,7 @@ export default async function HomePage() {
       <CategoryGrid categories={categories} />
       <TrendingProducts />
       <WeeklyEdit />
+      <MostViewed />
       <WhyOdtsi />
       <ConnectSection />
     </>
