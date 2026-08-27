@@ -7,11 +7,13 @@ import { ProductCarousel } from "@/components/home/product-carousel";
 // avg_rating: null and review_count: 0, nothing to rank by honestly. Real
 // view counts do have genuine variance today, so this ranks by those
 // instead. Swap the sort to rating once real reviews start coming in.
+const MIN_VIEWS = 50;
+
 async function loadMostViewed(): Promise<Product[]> {
   try {
     const products = await getProducts();
     return products
-      .filter((p) => p.viewCount !== null && p.viewCount > 0)
+      .filter((p) => p.viewCount !== null && p.viewCount > MIN_VIEWS)
       .sort((a, b) => (b.viewCount ?? 0) - (a.viewCount ?? 0))
       .slice(0, 12);
   } catch {
