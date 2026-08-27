@@ -1,5 +1,8 @@
 export interface ParsedDescription {
-  textHtml: string;
+  // The text, split into block-level chunks (one per paragraph/list/heading)
+  // instead of one flat string — needed so real description images can be
+  // interleaved between blocks instead of dumped in a separate side column.
+  blocks: string[];
   images: { src: string; alt: string }[];
 }
 
@@ -20,18 +23,30 @@ function sanitize(html: string): string {
     .replace(/(href|src)\s*=\s*(["'])\s*javascript:[^"']*\2/gi, '$1=$2#$2');
 }
 
-// Images are pulled out of the flowing text so the page can lay them out on
-// its own instead of depending on however the supplier's markup wrapped them.
+// Splits after every top-level block-level closing tag so each chunk is a
+// self-contained, still-valid piece of HTML — good enough for real supplier
+// markup, which is almost always just a flat run of <p>/<ul>/<ol>/<h*> tags,
+// not deeply nested structure.
+function splitIntoBlocks(html: string): string[] {
+  return html
+    .split(/(?<=<\/(?:p|ul|ol|h[1-6]|blockquote)>)/gi)
+    .map((block) => block.trim())
+    .filter(Boolean);
+}
+
+// Images are pulled out of the flowing text so the page can place them
+// between text blocks itself instead of depending on however the supplier's
+// markup wrapped them.
 export function parseProductDescription(html: string): ParsedDescription {
   const clean = sanitize(html);
 
   const images: { src: string; alt: string }[] = [];
-  const textHtml = clean.replace(/<img\b[^>]*>/gi, (imgTag) => {
+  const withoutImages = clean.replace(/<img\b[^>]*>/gi, (imgTag) => {
     const srcMatch = imgTag.match(/src=["']([^"']+)["']/i);
     const altMatch = imgTag.match(/alt=["']([^"']*)["']/i);
     if (srcMatch?.[1]) images.push({ src: srcMatch[1], alt: altMatch?.[1] ?? "" });
     return "";
   });
 
-  return { textHtml, images };
+  return { blocks: splitIntoBlocks(withoutImages), images };
 }

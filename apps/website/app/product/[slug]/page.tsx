@@ -14,6 +14,7 @@ import { ReviewsSection } from "@/components/product/reviews-section";
 import { SecureCheckoutStrip } from "@/components/product/secure-checkout-strip";
 import { parseProductDescription } from "@/lib/parse-product-description";
 import { getSession } from "@/lib/session";
+import { displayPrice } from "@/lib/product-price";
 
 async function loadReviews(slug: string): Promise<ProductReview[]> {
   try {
@@ -46,16 +47,17 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     notFound();
   }
 
-  const hasDiscount = product.compareAtPrice !== null && product.compareAtPrice > product.price;
+  const price = displayPrice(product);
+  const hasDiscount = product.compareAtPrice !== null && product.compareAtPrice > price;
   const galleryImages = product.images.length > 0 ? product.images : product.imageUrl ? [product.imageUrl] : [];
   const discountBadge = hasDiscount
-    ? `-${Math.round((1 - product.price / product.compareAtPrice!) * 100)}% Today`
+    ? `-${Math.round((1 - price / product.compareAtPrice!) * 100)}% Today`
     : undefined;
   const hasVideoContent = product.videos.length > 0 || product.testimonials.length > 0;
   const hasTiers = product.quantityTiers.length > 0;
-  const { textHtml, images: descriptionImages } = product.description
+  const { blocks: descriptionBlocks, images: descriptionImages } = product.description
     ? parseProductDescription(product.description)
-    : { textHtml: "", images: [] };
+    : { blocks: [], images: [] };
   const [reviews, session] = await Promise.all([loadReviews(slug), getSession()]);
 
   return (
@@ -125,7 +127,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           <div>
             <h2 className="text-xs font-extrabold uppercase tracking-wide text-[#8B8880]">Description</h2>
             <div className="mt-3">
-              <DescriptionSection textHtml={textHtml} images={descriptionImages} />
+              <DescriptionSection blocks={descriptionBlocks} images={descriptionImages} />
             </div>
           </div>
         )}
