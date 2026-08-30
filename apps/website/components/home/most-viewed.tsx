@@ -13,7 +13,9 @@ async function loadMostViewed(): Promise<Product[]> {
   try {
     const products = await getProducts();
     return products
-      .filter((p) => p.viewCount !== null && p.viewCount > MIN_VIEWS)
+      // Physical only, same reasoning as Fresh Finds — affiliate and
+      // digital get their own dedicated rows instead.
+      .filter((p) => p.productType === "physical" && p.viewCount !== null && p.viewCount > MIN_VIEWS)
       .sort((a, b) => (b.viewCount ?? 0) - (a.viewCount ?? 0))
       .slice(0, 12);
   } catch {

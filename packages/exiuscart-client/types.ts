@@ -93,12 +93,21 @@ export interface ProductVariant {
   imageUrl: string;
 }
 
+export type ProductType = "physical" | "digital" | "affiliate";
+
 export interface Product {
   id: string;
   slug: string;
   name: string;
   tagline: string | null;
   description: string | null;
+  // "physical" for every real product today — digital and affiliate exist
+  // in ExiusCart's schema but no seller has created one of either yet.
+  productType: ProductType;
+  // Only set when productType is "affiliate" — the external destination
+  // and the seller-chosen button label (falls back to "Buy Now" if blank).
+  affiliateUrl: string | null;
+  affiliateCtaText: string | null;
   price: number;
   compareAtPrice: number | null;
   currency: string;

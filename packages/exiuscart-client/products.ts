@@ -1,5 +1,5 @@
 import { storeUrl } from "./config";
-import type { Product, ProductVariant, QuantityTier, ProductVideo } from "./types";
+import type { Product, ProductType, ProductVariant, QuantityTier, ProductVideo } from "./types";
 
 interface RawQuantityTier {
   quantity: number;
@@ -62,6 +62,11 @@ interface RawProduct {
   // whether or not the field is present in the response.
   view_count?: number;
   units_sold?: number;
+  // Optional the same way — older responses (or products created before
+  // this field existed) won't have it, so this falls back to "physical".
+  product_type?: ProductType;
+  affiliate_url?: string | null;
+  affiliate_cta_text?: string | null;
 }
 
 function mapVariants(raw: RawVariant[] | undefined): ProductVariant[] {
@@ -143,6 +148,9 @@ function mapProduct(raw: RawProduct): Product {
     viewCount: raw.view_count ?? null,
     unitsSold: raw.units_sold ?? null,
     variants: mapVariants(raw.variants),
+    productType: raw.product_type ?? "physical",
+    affiliateUrl: raw.affiliate_url ?? null,
+    affiliateCtaText: raw.affiliate_cta_text ?? null,
   };
 }
 

@@ -3,6 +3,8 @@ import { CategoryGrid } from "@/components/home/category-grid";
 import { TrendingProducts } from "@/components/home/trending-products";
 import { WeeklyEdit } from "@/components/home/weekly-edit";
 import { MostViewed } from "@/components/home/most-viewed";
+import { PopularAffiliate } from "@/components/home/popular-affiliate";
+import { DigitalProducts } from "@/components/home/digital-products";
 import { WhyOdtsi } from "@/components/home/why-odtsi";
 import { ConnectSection } from "@/components/home/connect-section";
 import { getCategories, type Category } from "@odtsi/exiuscart-client";
@@ -44,6 +46,8 @@ export default async function HomePage() {
       <TrendingProducts />
       <WeeklyEdit />
       <MostViewed />
+      <PopularAffiliate />
+      <DigitalProducts />
       <WhyOdtsi />
       <ConnectSection />
     </>
