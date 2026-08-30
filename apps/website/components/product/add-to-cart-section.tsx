@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Minus, Plus, Check } from "lucide-react";
+import { Minus, Plus, Check, ExternalLink } from "lucide-react";
 import type { Product, ProductVariant } from "@odtsi/exiuscart-client";
 import { addToCart } from "@/lib/cart";
 import { notifyAdded, notifyVariantImage } from "@/lib/notify";
@@ -14,7 +14,11 @@ import { cheapestVariant } from "@/lib/product-price";
 // need to follow it, and those can't stay static JSX in the server-rendered
 // page anymore.
 export function AddToCartSection({ product }: { product: Product }) {
-  const hasVariants = product.variants.length > 0;
+  // Affiliate products aren't sold by us — no cart, no quantity, no stock
+  // info (ExiusCart's checkout rejects them with a 400 if they ever reach
+  // it), and no wallet cashback since no money actually moves through us.
+  const isAffiliate = product.productType === "affiliate";
+  const hasVariants = !isAffiliate && product.variants.length > 0;
   // Same cheapest-in-stock pick used for the listing card's price — the
   // product page needs to default to whatever price the shopper already
   // saw before clicking through, not just whichever variant sits first in
@@ -104,9 +108,11 @@ export function AddToCartSection({ product }: { product: Product }) {
         )}
       </div>
 
-      <p className="mt-2 text-sm font-bold text-status">
-        {inStock ? "In Stock — Order Now Before It's Gone" : "Out of Stock"}
-      </p>
+      {!isAffiliate && (
+        <p className="mt-2 text-sm font-bold text-status">
+          {inStock ? "In Stock — Order Now Before It's Gone" : "Out of Stock"}
+        </p>
+      )}
 
       {hasVariants && (
         <div className="mt-5 flex flex-col gap-4">
@@ -167,40 +173,56 @@ export function AddToCartSection({ product }: { product: Product }) {
         </div>
       )}
 
-      <div className="mt-5 flex w-fit items-center rounded-xl border border-black/10">
-        <button
-          type="button"
-          onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-          aria-label="Decrease quantity"
-          className="flex h-12 w-11 items-center justify-center text-[#716D67] hover:text-primary"
-        >
-          <Minus size={16} />
-        </button>
-        <span className="w-8 text-center text-sm font-bold text-[#16161A]">{quantity}</span>
-        <button
-          type="button"
-          onClick={() => setQuantity((q) => (maxQuantity != null ? Math.min(maxQuantity, q + 1) : q + 1))}
-          disabled={maxQuantity != null && quantity >= maxQuantity}
-          aria-label="Increase quantity"
-          className="flex h-12 w-11 items-center justify-center text-[#716D67] hover:text-primary disabled:cursor-not-allowed disabled:opacity-30"
-        >
-          <Plus size={16} />
-        </button>
-      </div>
+      {!isAffiliate && (
+        <div className="mt-5 flex w-fit items-center rounded-xl border border-black/10">
+          <button
+            type="button"
+            onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+            aria-label="Decrease quantity"
+            className="flex h-12 w-11 items-center justify-center text-[#716D67] hover:text-primary"
+          >
+            <Minus size={16} />
+          </button>
+          <span className="w-8 text-center text-sm font-bold text-[#16161A]">{quantity}</span>
+          <button
+            type="button"
+            onClick={() => setQuantity((q) => (maxQuantity != null ? Math.min(maxQuantity, q + 1) : q + 1))}
+            disabled={maxQuantity != null && quantity >= maxQuantity}
+            aria-label="Increase quantity"
+            className="flex h-12 w-11 items-center justify-center text-[#716D67] hover:text-primary disabled:cursor-not-allowed disabled:opacity-30"
+          >
+            <Plus size={16} />
+          </button>
+        </div>
+      )}
 
       <div className="mt-5 flex items-center gap-3">
-        <button
-          type="button"
-          onClick={handleAdd}
-          disabled={!inStock || (hasVariants && !selectedVariant)}
-          className="h-[58px] flex-1 rounded-2xl bg-gradient-to-br from-[#F6C935] to-[#C99200] text-[16px] font-extrabold text-[#16161A] shadow-[0_10px_24px_-8px_rgba(201,146,0,0.55)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
-        >
-          {!inStock ? "Out of Stock" : justAdded ? "Added to Cart" : "Add to Cart"}
-        </button>
+        {isAffiliate ? (
+          <a
+            href={product.affiliateUrl ?? "#"}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex h-[58px] flex-1 items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-extrabold text-white shadow-[0_10px_24px_-8px_rgba(27,42,94,0.5)] transition hover:bg-primary-hover"
+          >
+            <ExternalLink size={18} />
+            {product.affiliateCtaText || "Buy Now"}
+          </a>
+        ) : (
+          <button
+            type="button"
+            onClick={handleAdd}
+            disabled={!inStock || (hasVariants && !selectedVariant)}
+            className="h-[58px] flex-1 rounded-2xl bg-gradient-to-br from-[#F6C935] to-[#C99200] text-[16px] font-extrabold text-[#16161A] shadow-[0_10px_24px_-8px_rgba(201,146,0,0.55)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
+          >
+            {!inStock ? "Out of Stock" : justAdded ? "Added to Cart" : "Add to Cart"}
+          </button>
+        )}
         <WishlistButton product={product} />
       </div>
 
-      <p className="mt-3 text-center text-[11px] text-[#8B8880]">3.5% back in your ODTSI Wallet on this order</p>
+      {!isAffiliate && (
+        <p className="mt-3 text-center text-[11px] text-[#8B8880]">3.5% back in your ODTSI Wallet on this order</p>
+      )}
     </div>
   );
 }

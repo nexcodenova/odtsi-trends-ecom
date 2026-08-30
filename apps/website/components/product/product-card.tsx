@@ -3,7 +3,7 @@
 import { useState, useEffect, type MouseEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ShoppingCart, Check, Gift, Eye, Heart } from "lucide-react";
+import { ShoppingCart, Check, Gift, Eye, Heart, ExternalLink } from "lucide-react";
 import type { Product, QuantityTier } from "@odtsi/exiuscart-client";
 import { Price } from "@/components/shared/price";
 import { addToCart } from "@/lib/cart";
@@ -32,6 +32,10 @@ export function ProductCard({ product }: ProductCardProps) {
   const [justAdded, setJustAdded] = useState(false);
   // Starts false on the server (no localStorage there) and syncs on mount.
   const [saved, setSaved] = useState(false);
+  // Affiliate products aren't sold by us — ExiusCart's checkout rejects
+  // them with a 400 if they ever reach it, so the card can't offer Add to
+  // Cart at all for these, only a real external link.
+  const isAffiliate = product.productType === "affiliate";
   const variant = cheapestVariant(product);
   const price = displayPrice(product);
   const imageUrl = variant?.imageUrl || product.imageUrl;
@@ -90,9 +94,15 @@ export function ProductCard({ product }: ProductCardProps) {
               className="object-cover opacity-0 transition duration-300 group-hover:opacity-100"
             />
           )}
-          {!product.inStock && (
+          {!product.inStock && !isAffiliate && (
             <span className="absolute inset-0 flex items-center justify-center bg-white/70 text-xs font-bold text-[#716D67]">
               Out of stock
+            </span>
+          )}
+
+          {isAffiliate && (
+            <span className="absolute left-2 top-2 rounded-full bg-primary px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide text-white">
+              Affiliate
             </span>
           )}
 
@@ -126,13 +136,15 @@ export function ProductCard({ product }: ProductCardProps) {
           </div>
         )}
 
-        <p className={`mt-1 text-sm font-bold ${product.inStock ? "text-status" : "text-[#B9412E]"}`}>
-          {!product.inStock
-            ? "Out of Stock"
-            : product.stockCount !== null && product.stockCount <= 10
-              ? "Limited Stock"
-              : "In Stock"}
-        </p>
+        {!isAffiliate && (
+          <p className={`mt-1 text-sm font-bold ${product.inStock ? "text-status" : "text-[#B9412E]"}`}>
+            {!product.inStock
+              ? "Out of Stock"
+              : product.stockCount !== null && product.stockCount <= 10
+                ? "Limited Stock"
+                : "In Stock"}
+          </p>
+        )}
 
         <div className="mt-2 flex flex-wrap items-baseline gap-2">
           {hasDiscount && (
@@ -156,24 +168,38 @@ export function ProductCard({ product }: ProductCardProps) {
 
       <div className="flex-1" />
 
-      <button
-        type="button"
-        onClick={handleAdd}
-        disabled={!product.inStock}
-        className="mt-3 flex h-9 w-full items-center justify-center gap-1.5 rounded-xl bg-gradient-to-br from-[#F6C935] to-[#C99200] text-xs font-extrabold text-[#16161A] shadow-[0_6px_16px_-6px_rgba(201,146,0,0.55)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none disabled:from-[#e5e5e5] disabled:to-[#e5e5e5] sm:h-12 sm:gap-2 sm:text-base"
-      >
-        {justAdded ? (
-          <>
-            <Check size={14} className="sm:hidden" />
-            <Check size={18} className="hidden sm:block" /> Added
-          </>
-        ) : (
-          <>
-            <ShoppingCart size={14} className="sm:hidden" />
-            <ShoppingCart size={18} className="hidden sm:block" /> Add to Cart
-          </>
-        )}
-      </button>
+      {isAffiliate ? (
+        <a
+          href={product.affiliateUrl ?? "#"}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="mt-3 flex h-9 w-full items-center justify-center gap-1.5 rounded-xl bg-primary text-xs font-extrabold text-white shadow-[0_6px_16px_-6px_rgba(27,42,94,0.5)] transition hover:bg-primary-hover sm:h-12 sm:gap-2 sm:text-base"
+        >
+          <ExternalLink size={14} className="sm:hidden" />
+          <ExternalLink size={18} className="hidden sm:block" />
+          {product.affiliateCtaText || "Buy Now"}
+        </a>
+      ) : (
+        <button
+          type="button"
+          onClick={handleAdd}
+          disabled={!product.inStock}
+          className="mt-3 flex h-9 w-full items-center justify-center gap-1.5 rounded-xl bg-gradient-to-br from-[#F6C935] to-[#C99200] text-xs font-extrabold text-[#16161A] shadow-[0_6px_16px_-6px_rgba(201,146,0,0.55)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none disabled:from-[#e5e5e5] disabled:to-[#e5e5e5] sm:h-12 sm:gap-2 sm:text-base"
+        >
+          {justAdded ? (
+            <>
+              <Check size={14} className="sm:hidden" />
+              <Check size={18} className="hidden sm:block" /> Added
+            </>
+          ) : (
+            <>
+              <ShoppingCart size={14} className="sm:hidden" />
+              <ShoppingCart size={18} className="hidden sm:block" /> Add to Cart
+            </>
+          )}
+        </button>
+      )}
     </div>
   );
 }
