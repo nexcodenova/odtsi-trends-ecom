@@ -10,7 +10,8 @@ import { Price } from "@/components/shared/price";
 
 const STATUS_STYLE: Record<Order["status"], string> = {
   pending: "bg-[#FEF3C7] text-[#92400E]",
-  paid: "bg-primary-light text-primary",
+  confirmed: "bg-primary-light text-primary",
+  processing: "bg-[#EDE9FE] text-[#5B21B6]",
   shipped: "bg-[#DBEAFE] text-[#1E40AF]",
   delivered: "bg-[#DCFCE7] text-[#166534]",
   cancelled: "bg-[#FEE2E2] text-[#991B1B]",
@@ -80,14 +81,36 @@ export function TrackOrder() {
         </form>
 
         {order && (
-          <div className="mt-5 flex items-center justify-between rounded-xl border border-black/10 p-4">
-            <div>
-              <p className="text-sm font-extrabold text-[#16161A]">{order.orderNumber}</p>
-              <Price amount={order.total} currency={order.currency} className="text-sm text-[#716D67]" />
+          <div className="mt-5 rounded-xl border border-black/10 p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-extrabold text-[#16161A]">{order.orderNumber}</p>
+                <Price amount={order.total} currency={order.currency} className="text-sm text-[#716D67]" />
+              </div>
+              <span className={`rounded-full px-3 py-1 text-xs font-bold capitalize ${STATUS_STYLE[order.status]}`}>
+                {order.status}
+              </span>
             </div>
-            <span className={`rounded-full px-3 py-1 text-xs font-bold capitalize ${STATUS_STYLE[order.status]}`}>
-              {order.status}
-            </span>
+
+            {/* Null until the seller marks the order shipped — not an error, just "not shipped yet". */}
+            {order.trackingNumber && (
+              <div className="mt-3 border-t border-black/10 pt-3 text-sm text-[#4A4844]">
+                <p>
+                  Tracking: <span className="font-bold text-[#16161A]">{order.trackingNumber}</span>
+                  {order.carrier && <span className="text-[#8B8880]"> via {order.carrier}</span>}
+                </p>
+                {order.shippedAt && (
+                  <p className="mt-1 text-xs text-[#8B8880]">
+                    Shipped {new Date(order.shippedAt).toLocaleDateString()}
+                  </p>
+                )}
+                {order.estimatedDelivery && (
+                  <p className="mt-1 text-xs text-[#8B8880]">
+                    Estimated delivery {new Date(order.estimatedDelivery).toLocaleDateString()}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         )}
       </CardContent>

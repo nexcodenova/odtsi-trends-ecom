@@ -1,5 +1,10 @@
 import { storeUrl } from "./config";
-import type { Product, ProductType, ProductVariant, QuantityTier, ProductVideo } from "./types";
+import type { Product, ProductFaq, ProductType, ProductVariant, QuantityTier, ProductVideo } from "./types";
+
+interface RawFaq {
+  question: string;
+  answer: string;
+}
 
 interface RawQuantityTier {
   quantity: number;
@@ -67,6 +72,14 @@ interface RawProduct {
   product_type?: ProductType;
   affiliate_url?: string | null;
   affiliate_cta_text?: string | null;
+  // Added 2026-08-31 — optional so older/cached responses without them
+  // still map safely.
+  faq?: RawFaq[];
+  shipping_note?: string | null;
+}
+
+function mapFaq(raw: RawFaq[] | undefined): ProductFaq[] {
+  return (raw ?? []).map((f) => ({ question: f.question, answer: f.answer }));
 }
 
 function mapVariants(raw: RawVariant[] | undefined): ProductVariant[] {
@@ -151,6 +164,8 @@ function mapProduct(raw: RawProduct): Product {
     productType: raw.product_type ?? "physical",
     affiliateUrl: raw.affiliate_url ?? null,
     affiliateCtaText: raw.affiliate_cta_text ?? null,
+    faq: mapFaq(raw.faq),
+    shippingNote: raw.shipping_note ?? null,
   };
 }
 

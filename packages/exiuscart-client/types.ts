@@ -138,6 +138,18 @@ export interface Product {
   unitsSold: number | null;
   // Real color/size options only — empty for products that don't vary.
   variants: ProductVariant[];
+  // Seller-written Q&A, added 2026-08-31 — empty on every real product
+  // seen so far, so the exact per-entry shape (beyond an array existing)
+  // isn't confirmed yet. Render only if non-empty.
+  faq: ProductFaq[];
+  // Physical products only, same date — free-text note from the seller
+  // about shipping (e.g. handling time). Null when not set.
+  shippingNote: string | null;
+}
+
+export interface ProductFaq {
+  question: string;
+  answer: string;
 }
 
 export interface CartItem {
@@ -163,7 +175,17 @@ export interface CheckoutPayload {
 
 export interface Order {
   orderNumber: string;
-  status: "pending" | "paid" | "shipped" | "delivered" | "cancelled";
+  // Real status enum, confirmed by ExiusCart directly (2026-08-31):
+  // pending (checkout creation) -> confirmed (payment gateway confirms,
+  // automatic) -> processing/shipped/delivered (seller sets manually) or
+  // cancelled. "paid" was wrong — the real value is "confirmed".
+  status: "pending" | "confirmed" | "processing" | "shipped" | "delivered" | "cancelled";
   total: number;
   currency: string;
+  // Real tracking fields ExiusCart added 2026-08-31 — null until the
+  // seller marks the order shipped, not an error or "not supported".
+  trackingNumber: string | null;
+  carrier: string | null;
+  shippedAt: string | null;
+  estimatedDelivery: string | null;
 }
