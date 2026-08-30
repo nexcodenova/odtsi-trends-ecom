@@ -12,6 +12,7 @@ import { TrustSignals } from "@/components/product/trust-signals";
 import { DescriptionSection } from "@/components/product/description-section";
 import { ReviewsSection } from "@/components/product/reviews-section";
 import { SecureCheckoutStrip } from "@/components/product/secure-checkout-strip";
+import { ProductFaqSection } from "@/components/product/product-faq";
 import { parseProductDescription } from "@/lib/parse-product-description";
 import { getSession } from "@/lib/session";
 import { displayPrice } from "@/lib/product-price";
@@ -129,6 +130,16 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             </div>
           )}
 
+          {/* Seller's own note on shipping/handling time — physical only,
+              real field from ExiusCart, shown only when they've actually
+              written one. */}
+          {product.productType === "physical" && product.shippingNote && (
+            <p className="mt-4 flex items-start gap-2 text-[12.5px] leading-snug text-[#716D67]">
+              <Truck size={15} className="mt-0.5 shrink-0 text-[#8B8880]" />
+              {product.shippingNote}
+            </p>
+          )}
+
           {!isAffiliate && product.bundle && <BundleOfferSection product={product} bundle={product.bundle} />}
 
           {/* No checkout happens on our side for affiliate — the strip's
@@ -162,6 +173,20 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             <h2 className="text-xs font-extrabold uppercase tracking-wide text-[#8B8880]">Videos</h2>
             <div className="mt-3">
               <ProductVideos videos={product.videos} testimonials={product.testimonials} />
+            </div>
+          </div>
+        )}
+
+        {/* Real seller-written Q&A only — section skips entirely when
+            ExiusCart hasn't sent any, same "honest empty" rule as everything
+            else on this page. */}
+        {product.faq.length > 0 && (
+          <div className="mt-10">
+            <h2 className="text-center text-xs font-extrabold uppercase tracking-wide text-[#8B8880]">
+              Frequently Asked Questions
+            </h2>
+            <div className="mt-4">
+              <ProductFaqSection faq={product.faq} />
             </div>
           </div>
         )}
