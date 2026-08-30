@@ -26,9 +26,18 @@ async function loadReviews(slug: string): Promise<ProductReview[]> {
   }
 }
 
-const BENEFITS = [
+// Delivery claim has to match how the product actually reaches the
+// customer — a digital product is never shipped or tracked, so showing
+// "Fast, Free & Tracked Delivery" on one would be a false claim.
+const PHYSICAL_BENEFITS = [
   { icon: ShieldCheck, label: "Secure checkout" },
   { icon: Truck, label: "Fast, Free & Tracked Delivery" },
+  { icon: RotateCcw, label: "30-Day Money Back" },
+];
+
+const DIGITAL_BENEFITS = [
+  { icon: ShieldCheck, label: "Secure checkout" },
+  { icon: Truck, label: "Delivered Instantly by Email" },
   { icon: RotateCcw, label: "30-Day Money Back" },
 ];
 
@@ -47,6 +56,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     notFound();
   }
 
+  const isAffiliate = product.productType === "affiliate";
   const price = displayPrice(product);
   const hasDiscount = product.compareAtPrice !== null && product.compareAtPrice > price;
   const galleryImages = product.images.length > 0 ? product.images : product.imageUrl ? [product.imageUrl] : [];
@@ -54,7 +64,10 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     ? `-${Math.round((1 - price / product.compareAtPrice!) * 100)}% Today`
     : undefined;
   const hasVideoContent = product.videos.length > 0 || product.testimonials.length > 0;
-  const hasTiers = product.quantityTiers.length > 0;
+  // Tiers/bundles both go through addToCart directly — never valid for an
+  // affiliate product, which ExiusCart's real checkout hard-rejects with a
+  // 400. Gated on productType here too, not just on the data existing.
+  const hasTiers = !isAffiliate && product.quantityTiers.length > 0;
   const { blocks: descriptionBlocks, images: descriptionImages } = product.description
     ? parseProductDescription(product.description)
     : { blocks: [], images: [] };
@@ -99,20 +112,28 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             <AddToCartSection product={product} />
           </div>
 
-          <div className="mt-5 grid grid-cols-3 gap-3 border-y border-black/5 py-5">
-            {BENEFITS.map(({ icon: Icon, label }) => (
-              <div key={label} className="flex flex-col items-center gap-2 text-center">
-                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary-light text-primary">
-                  <Icon size={22} />
-                </span>
-                <span className="text-sm font-extrabold leading-tight text-[#16161A]">{label}</span>
-              </div>
-            ))}
-          </div>
+          {/* Affiliate isn't fulfilled by us at all — no checkout, no
+              shipping, no return policy to claim, so this row would be
+              false for it. Physical and digital each get the claims that
+              are actually true for how they're delivered. */}
+          {!isAffiliate && (
+            <div className="mt-5 grid grid-cols-3 gap-3 border-y border-black/5 py-5">
+              {(product.productType === "digital" ? DIGITAL_BENEFITS : PHYSICAL_BENEFITS).map(({ icon: Icon, label }) => (
+                <div key={label} className="flex flex-col items-center gap-2 text-center">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary-light text-primary">
+                    <Icon size={22} />
+                  </span>
+                  <span className="text-sm font-extrabold leading-tight text-[#16161A]">{label}</span>
+                </div>
+              ))}
+            </div>
+          )}
 
-          {product.bundle && <BundleOfferSection product={product} bundle={product.bundle} />}
+          {!isAffiliate && product.bundle && <BundleOfferSection product={product} bundle={product.bundle} />}
 
-          <SecureCheckoutStrip />
+          {/* No checkout happens on our side for affiliate — the strip's
+              claims (secure checkout, SSL) wouldn't be true here. */}
+          {!isAffiliate && <SecureCheckoutStrip />}
         </div>
       </div>
 
