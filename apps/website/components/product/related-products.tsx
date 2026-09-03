@@ -7,14 +7,17 @@ import { ProductCarousel } from "@/components/home/product-carousel";
 // only that it's related to what they're already looking at. Sorted by
 // real view count within the category, highest first — same "most viewed"
 // idea as the homepage section, just scoped to this category instead of
-// site-wide.
+// site-wide. Capped to 4 — two rows on the base mobile grid (grid-cols-2)
+// instead of sprawling as more real products qualify.
+const MAX_RELATED = 4;
+
 async function loadRelated(categorySlug: string, excludeId: string): Promise<Product[]> {
   try {
     const products = await getProducts({ category: categorySlug });
     return products
       .filter((p) => p.id !== excludeId)
       .sort((a, b) => (b.viewCount ?? 0) - (a.viewCount ?? 0))
-      .slice(0, 12);
+      .slice(0, MAX_RELATED);
   } catch {
     return [];
   }

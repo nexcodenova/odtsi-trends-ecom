@@ -14,7 +14,6 @@ import { DescriptionSection } from "@/components/product/description-section";
 import { ReviewsSection } from "@/components/product/reviews-section";
 import { ProductFaqSection } from "@/components/product/product-faq";
 import { RelatedProducts } from "@/components/product/related-products";
-import { MostViewedProducts } from "@/components/product/most-viewed-products";
 import { DigitalTrustStrip } from "@/components/product/digital-trust-strip";
 import { PhysicalTrustStrip } from "@/components/product/physical-trust-strip";
 import { DigitalProductTabs } from "@/components/product/digital-product-tabs";
@@ -247,11 +246,6 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           can all show up here. Skips entirely if this product has no real
           category or nothing else real shares it. */}
       <RelatedProducts categorySlug={product.categorySlug} excludeId={product.id} />
-
-      {/* Real >50-view products, any type this page's product isn't —
-          same section every product page ends on, same real threshold the
-          homepage's Most Viewed row uses. */}
-      <MostViewedProducts excludeId={product.id} />
     </div>
   );
 }
