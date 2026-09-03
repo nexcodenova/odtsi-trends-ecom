@@ -13,6 +13,7 @@ import { DescriptionSection } from "@/components/product/description-section";
 import { ReviewsSection } from "@/components/product/reviews-section";
 import { SecureCheckoutStrip } from "@/components/product/secure-checkout-strip";
 import { ProductFaqSection } from "@/components/product/product-faq";
+import { RelatedProducts } from "@/components/product/related-products";
 import { parseProductDescription } from "@/lib/parse-product-description";
 import { getSession } from "@/lib/session";
 import { displayPrice } from "@/lib/product-price";
@@ -191,6 +192,11 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           </div>
         )}
       </div>
+
+      {/* Same category, any product type — physical, digital, or affiliate
+          can all show up here. Skips entirely if this product has no real
+          category or nothing else real shares it. */}
+      <RelatedProducts categorySlug={product.categorySlug} excludeId={product.id} />
     </div>
   );
 }

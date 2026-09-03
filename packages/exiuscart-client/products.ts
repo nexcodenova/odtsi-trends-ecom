@@ -1,4 +1,5 @@
 import { storeUrl } from "./config";
+import { getCategories } from "./categories";
 import type { Product, ProductFaq, ProductType, ProductVariant, QuantityTier, ProductVideo } from "./types";
 
 interface RawFaq {
@@ -125,7 +126,7 @@ function mapVideos(raw: RawProduct): ProductVideo[] {
   return [];
 }
 
-function mapProduct(raw: RawProduct): Product {
+function mapProduct(raw: RawProduct, categorySlugById: Map<string, string>): Product {
   return {
     id: String(raw.id),
     slug: raw.slug,
@@ -142,11 +143,17 @@ function mapProduct(raw: RawProduct): Product {
     imageUrl: raw.images[0] ?? "",
     images: raw.images,
     videos: mapVideos(raw),
-    // No real category slug yet — Storefront Categories isn't set up on
-    // ExiusCart's side, so category_id can't be resolved to a slug. Falls
-    // back to a stringified id so category links don't crash, but this
-    // needs real category data before it's actually correct.
-    categorySlug: raw.category_id !== null ? String(raw.category_id) : "uncategorized",
+    // Real category slug, resolved from /categories — confirmed live
+    // 2026-09-01 that Storefront Categories IS set up now (real slugs like
+    // "fashion-390a8b"), and that filtering /products?category= by the
+    // numeric id (what this used to send) silently returns zero results,
+    // while the real slug works. Falls back to the stringified id only if
+    // the category ever isn't found in the map (shouldn't happen for a
+    // real category_id, but keeps a bad id from crashing the page).
+    categorySlug:
+      raw.category_id !== null
+        ? (categorySlugById.get(String(raw.category_id)) ?? String(raw.category_id))
+        : "uncategorized",
     inStock: raw.in_stock,
     stockCount: raw.quantity,
     // Bundle isn't in the public API yet — stays null until it is.
@@ -169,21 +176,42 @@ function mapProduct(raw: RawProduct): Product {
   };
 }
 
+// Categories load in parallel with products and get turned into an id ->
+// slug lookup for mapProduct(). getCategories() is cached for 5 minutes
+// (see categories.ts) so this doesn't add a real extra request per call.
+async function loadCategorySlugMap(): Promise<Map<string, string>> {
+  try {
+    const categories = await getCategories();
+    return new Map(categories.map((c) => [c.id, c.slug]));
+  } catch {
+    // /categories being down shouldn't take /products down with it —
+    // mapProduct() falls back to the raw numeric id when a product's
+    // category isn't in the map.
+    return new Map();
+  }
+}
+
 export async function getProducts(params?: { category?: string; collection?: string }): Promise<Product[]> {
   const query = new URLSearchParams();
   if (params?.category) query.set("category", params.category);
   if (params?.collection) query.set("collection", params.collection);
   const qs = query.toString();
 
-  const res = await fetch(storeUrl(`/products${qs ? `?${qs}` : ""}`), { next: { revalidate: 60 } });
+  const [res, categorySlugById] = await Promise.all([
+    fetch(storeUrl(`/products${qs ? `?${qs}` : ""}`), { next: { revalidate: 60 } }),
+    loadCategorySlugMap(),
+  ]);
   if (!res.ok) throw new Error(`Failed to load products: ${res.status}`);
   const raw: RawProduct[] = await res.json();
-  return raw.map(mapProduct);
+  return raw.map((p) => mapProduct(p, categorySlugById));
 }
 
 export async function getProduct(slug: string): Promise<Product> {
-  const res = await fetch(storeUrl(`/products/${slug}`), { next: { revalidate: 60 } });
+  const [res, categorySlugById] = await Promise.all([
+    fetch(storeUrl(`/products/${slug}`), { next: { revalidate: 60 } }),
+    loadCategorySlugMap(),
+  ]);
   if (!res.ok) throw new Error(`Failed to load product "${slug}": ${res.status}`);
   const raw: RawProduct = await res.json();
-  return mapProduct(raw);
+  return mapProduct(raw, categorySlugById);
 }
