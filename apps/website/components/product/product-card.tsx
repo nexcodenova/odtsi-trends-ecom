@@ -106,13 +106,13 @@ export function ProductCard({ product, compact }: ProductCardProps) {
   return (
     <div className="flex h-full flex-col rounded-2xl p-3">
       <Link href={`/product/${product.slug}`} className="group block">
-        <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-primary-light">
+        <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-white">
           {product.imageUrl ? (
             <Image
               src={product.imageUrl}
               alt={product.name}
               fill
-              className={`object-cover transition duration-300 ${
+              className={`object-contain transition duration-300 ${
                 secondImageUrl ? "group-hover:opacity-0" : "group-hover:scale-105"
               }`}
             />
@@ -122,7 +122,7 @@ export function ProductCard({ product, compact }: ProductCardProps) {
               src={secondImageUrl}
               alt={product.name}
               fill
-              className="object-cover opacity-0 transition duration-300 group-hover:opacity-100"
+              className="object-contain opacity-0 transition duration-300 group-hover:opacity-100"
             />
           )}
           {!product.inStock && !isAffiliate && (
