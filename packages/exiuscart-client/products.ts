@@ -173,6 +173,7 @@ function mapProduct(raw: RawProduct, categorySlugById: Map<string, string>): Pro
     affiliateCtaText: raw.affiliate_cta_text ?? null,
     faq: mapFaq(raw.faq),
     shippingNote: raw.shipping_note ?? null,
+    tags: raw.tags ?? [],
   };
 }
 

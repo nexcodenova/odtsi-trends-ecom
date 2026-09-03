@@ -1,20 +1,22 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ShieldCheck, Truck, RotateCcw } from "lucide-react";
+import { Truck } from "lucide-react";
 import { getProduct, getReviews, type ProductReview } from "@odtsi/exiuscart-client";
 import { ProductGallery } from "@/components/product/product-gallery";
 import { FeatureHighlights } from "@/components/product/feature-highlights";
 import { AddToCartSection } from "@/components/product/add-to-cart-section";
+import { WishlistButton } from "@/components/product/wishlist-button";
 import { PackSelector } from "@/components/product/pack-selector";
 import { BundleOfferSection } from "@/components/product/bundle-offer-section";
 import { ProductVideos } from "@/components/product/product-videos";
 import { TrustSignals } from "@/components/product/trust-signals";
 import { DescriptionSection } from "@/components/product/description-section";
 import { ReviewsSection } from "@/components/product/reviews-section";
-import { SecureCheckoutStrip } from "@/components/product/secure-checkout-strip";
 import { ProductFaqSection } from "@/components/product/product-faq";
 import { RelatedProducts } from "@/components/product/related-products";
 import { DigitalTrustStrip } from "@/components/product/digital-trust-strip";
+import { PhysicalTrustStrip } from "@/components/product/physical-trust-strip";
+import { DigitalProductTabs } from "@/components/product/digital-product-tabs";
 import { parseProductDescription } from "@/lib/parse-product-description";
 import { getSession } from "@/lib/session";
 import { displayPrice } from "@/lib/product-price";
@@ -28,21 +30,6 @@ async function loadReviews(slug: string): Promise<ProductReview[]> {
     return [];
   }
 }
-
-// Delivery claim has to match how the product actually reaches the
-// customer — a digital product is never shipped or tracked, so showing
-// "Fast, Free & Tracked Delivery" on one would be a false claim.
-const PHYSICAL_BENEFITS = [
-  { icon: ShieldCheck, label: "Secure checkout" },
-  { icon: Truck, label: "Fast, Free & Tracked Delivery" },
-  { icon: RotateCcw, label: "30-Day Money Back" },
-];
-
-const DIGITAL_BENEFITS = [
-  { icon: ShieldCheck, label: "Secure checkout" },
-  { icon: Truck, label: "Delivered Instantly by Email" },
-  { icon: RotateCcw, label: "30-Day Money Back" },
-];
 
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -60,6 +47,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   }
 
   const isAffiliate = product.productType === "affiliate";
+  const isDigital = product.productType === "digital";
   const price = displayPrice(product);
   const hasDiscount = product.compareAtPrice !== null && product.compareAtPrice > price;
   const galleryImages = product.images.length > 0 ? product.images : product.imageUrl ? [product.imageUrl] : [];
@@ -89,14 +77,37 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         / <span className="text-[#4A4844]">{product.name}</span>
       </nav>
 
-      <div className="mt-4 grid grid-cols-1 gap-10 lg:grid-cols-2">
+      {/* Digital gets a narrower 55/45 hero split (smaller square gallery,
+          more room for the info column) instead of the even 50/50 physical
+          and affiliate pages use. */}
+      <div className={`mt-4 grid grid-cols-1 gap-8 lg:gap-10 ${isDigital ? "lg:grid-cols-[55%_45%]" : "lg:grid-cols-2"}`}>
         <div>
-          <ProductGallery images={galleryImages} productName={product.name} badge={discountBadge} />
+          {/* Digital only — wishlist moves onto the image corner (same
+              treatment ProductCard uses everywhere else) so Add to Cart can
+              go full width instead of sharing the row with a square
+              wishlist button. */}
+          <div className="relative">
+            <ProductGallery
+              images={galleryImages}
+              productName={product.name}
+              badge={discountBadge}
+              compact={isDigital}
+            />
+            {isDigital && (
+              <div className="absolute right-2 top-2">
+                <WishlistButton product={product} variant="corner" />
+              </div>
+            )}
+          </div>
 
           {product.specs.length > 0 && <FeatureHighlights specs={product.specs} />}
         </div>
 
-        <div>
+        {/* Fixed height matching the gallery on desktop for digital, plus
+            flex so AddToCartSection can stretch and pin its purchase
+            controls to the bottom via its own internal mt-auto — the
+            column's bottom edge lines up exactly with the image's. */}
+        <div className={isDigital ? "flex flex-col lg:h-[500px] xl:h-[530px]" : ""}>
           {product.rating !== null && product.reviewCount !== null && (
             <div className="flex items-center gap-2 text-[12.5px] text-[#716D67]">
               <span className="tracking-[1px] text-action">{"★".repeat(Math.round(product.rating))}{"☆".repeat(5 - Math.round(product.rating))}</span>
@@ -111,26 +122,9 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           </h1>
           {product.tagline && <p className="mt-1.5 text-[14px] text-[#8B8880]">{product.tagline}</p>}
 
-          <div className="mt-4">
+          <div className={`mt-4 ${isDigital ? "flex flex-1 flex-col" : ""}`}>
             <AddToCartSection product={product} />
           </div>
-
-          {/* Affiliate isn't fulfilled by us at all — no checkout, no
-              shipping, no return policy to claim, so this row would be
-              false for it. Physical and digital each get the claims that
-              are actually true for how they're delivered. */}
-          {!isAffiliate && (
-            <div className="mt-5 grid grid-cols-3 gap-3 border-y border-black/5 py-5">
-              {(product.productType === "digital" ? DIGITAL_BENEFITS : PHYSICAL_BENEFITS).map(({ icon: Icon, label }) => (
-                <div key={label} className="flex flex-col items-center gap-2 text-center">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary-light text-primary">
-                    <Icon size={22} />
-                  </span>
-                  <span className="text-sm font-extrabold leading-tight text-[#16161A]">{label}</span>
-                </div>
-              ))}
-            </div>
-          )}
 
           {/* Seller's own note on shipping/handling time — physical only,
               real field from ExiusCart, shown only when they've actually
@@ -143,21 +137,23 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           )}
 
           {!isAffiliate && product.bundle && <BundleOfferSection product={product} bundle={product.bundle} />}
-
-          {/* No checkout happens on our side for affiliate — the strip's
-              claims (secure checkout, SSL) wouldn't be true here. */}
-          {!isAffiliate && <SecureCheckoutStrip />}
         </div>
       </div>
 
-      {/* Full-width, digital only — makes it obvious at a glance that this
-          isn't a physical product, right below the fold where the shopper
-          already is. No invented numbers (no "10,000+ customers", no
-          fabricated star rating) — every tile is either a plain fact or a
+      {/* Full-width trust strip — same colorful-icon treatment for both
+          real sale types, content specific to how each actually gets
+          fulfilled. Affiliate gets neither: no checkout or shipping happens
+          on our side for it, so none of these claims would be true. No
+          invented numbers on either — every tile is a plain fact or a
           qualitative claim. */}
-      {product.productType === "digital" && (
+      {isDigital && (
         <div className="mt-10">
           <DigitalTrustStrip />
+        </div>
+      )}
+      {product.productType === "physical" && (
+        <div className="mt-10">
+          <PhysicalTrustStrip />
         </div>
       )}
 
@@ -167,43 +163,63 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         </div>
       )}
 
-      <div className="mt-10 border-t border-black/5 pt-8">
-        {product.description && (
-          <div>
-            <h2 className="text-xs font-extrabold uppercase tracking-wide text-[#8B8880]">Description</h2>
-            <div className="mt-3">
-              <DescriptionSection blocks={descriptionBlocks} images={descriptionImages} />
-            </div>
+      {hasVideoContent && (
+        <div className="mt-10 border-t border-black/5 pt-8">
+          <h2 className="text-xs font-extrabold uppercase tracking-wide text-[#8B8880]">Videos</h2>
+          <div className="mt-3">
+            <ProductVideos videos={product.videos} testimonials={product.testimonials} />
           </div>
-        )}
-
-        <div className={product.description ? "mt-10" : ""}>
-          <ReviewsSection slug={product.slug} reviews={reviews} isLoggedIn={session !== null} />
         </div>
+      )}
 
-        {hasVideoContent && (
-          <div className="mt-10">
-            <h2 className="text-xs font-extrabold uppercase tracking-wide text-[#8B8880]">Videos</h2>
-            <div className="mt-3">
-              <ProductVideos videos={product.videos} testimonials={product.testimonials} />
+      {isDigital ? (
+        // Tabbed layout, digital only — Description/FAQ/Reviews behind
+        // tabs instead of one continuous scroll. No Specifications tab:
+        // product.specs is a flat list of highlight strings (shown in the
+        // hero instead), not the label:value pairs a real specs table
+        // needs — that's a real gap for ExiusCart, not something to fake.
+        <div className="mt-10 border-t border-black/5 pt-8">
+          <DigitalProductTabs
+            slug={product.slug}
+            description={product.description}
+            descriptionBlocks={descriptionBlocks}
+            descriptionImages={descriptionImages}
+            faq={product.faq}
+            reviews={reviews}
+            isLoggedIn={session !== null}
+            tags={product.tags}
+          />
+        </div>
+      ) : (
+        <div className="mt-10 border-t border-black/5 pt-8">
+          {product.description && (
+            <div>
+              <h2 className="text-xs font-extrabold uppercase tracking-wide text-[#8B8880]">Description</h2>
+              <div className="mt-3">
+                <DescriptionSection blocks={descriptionBlocks} images={descriptionImages} />
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Real seller-written Q&A only — section skips entirely when
-            ExiusCart hasn't sent any, same "honest empty" rule as everything
-            else on this page. */}
-        {product.faq.length > 0 && (
-          <div className="mt-10">
-            <h2 className="text-center text-xs font-extrabold uppercase tracking-wide text-[#8B8880]">
-              Frequently Asked Questions
-            </h2>
-            <div className="mt-4">
-              <ProductFaqSection faq={product.faq} />
-            </div>
+          <div className={product.description ? "mt-10" : ""}>
+            <ReviewsSection slug={product.slug} reviews={reviews} isLoggedIn={session !== null} />
           </div>
-        )}
-      </div>
+
+          {/* Real seller-written Q&A only — section skips entirely when
+              ExiusCart hasn't sent any, same "honest empty" rule as
+              everything else on this page. */}
+          {product.faq.length > 0 && (
+            <div className="mt-10">
+              <h2 className="text-center text-xs font-extrabold uppercase tracking-wide text-[#8B8880]">
+                Frequently Asked Questions
+              </h2>
+              <div className="mt-4">
+                <ProductFaqSection faq={product.faq} />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Same category, any product type — physical, digital, or affiliate
           can all show up here. Skips entirely if this product has no real

@@ -145,6 +145,10 @@ export interface Product {
   // Physical products only, same date — free-text note from the seller
   // about shipping (e.g. handling time). Null when not set.
   shippingNote: string | null;
+  // Real seller-set tags — was already coming back from ExiusCart on every
+  // product but never mapped or shown anywhere. Empty array, not null,
+  // when a product has none.
+  tags: string[];
 }
 
 export interface ProductFaq {

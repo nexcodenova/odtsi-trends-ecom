@@ -1,14 +1,27 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useCart } from "@/hooks/use-cart";
 import { formatCurrency } from "@odtsi/utils";
 import { createCheckout } from "@odtsi/exiuscart-client";
 import { saveOrderRecord } from "@/lib/order-history";
+import { getBuyNowItem, clearBuyNowItem } from "@/lib/buy-now";
+import { cartSubtotal, type CartItem } from "@/lib/cart";
 
 export function CheckoutContent() {
-  const { items, subtotal } = useCart();
+  const { items: cartItems, subtotal: cartSubtotalAmount } = useCart();
+  // A Buy Now click stashes exactly one item here instead of touching the
+  // real cart — when present, checkout is scoped to just that item so a
+  // shopper who clicked Buy Now doesn't silently also pay for whatever
+  // else was already sitting in their cart.
+  const [buyNowItem, setLocalBuyNowItem] = useState<CartItem | null | undefined>(undefined);
+  useEffect(() => {
+    setLocalBuyNowItem(getBuyNowItem());
+  }, []);
+
+  const items = buyNowItem ? [buyNowItem] : cartItems;
+  const subtotal = buyNowItem ? cartSubtotal([buyNowItem]) : cartSubtotalAmount;
   const subtotalCurrency = items[0]?.currency ?? "USD";
   const price = (amount: number) => formatCurrency(amount, subtotalCurrency);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
@@ -41,6 +54,7 @@ export function CheckoutContent() {
       // Remembered locally so Order History on the account page can look
       // this up for real — ExiusCart has no account-wide order list yet.
       saveOrderRecord({ orderNumber: order.orderNumber, email });
+      clearBuyNowItem();
       // TODO: once this succeeds for real, clear the cart and redirect to
       // /order/{orderNumber} using the returned order + take clientSecret
       // to Stripe Elements to actually collect payment.
@@ -50,6 +64,11 @@ export function CheckoutContent() {
       setStatus("error");
     }
   }
+
+  // Wait for the sessionStorage check before deciding "empty" — otherwise
+  // a Buy Now redirect can flash the empty-cart state for a frame while
+  // buyNowItem is still unchecked.
+  if (buyNowItem === undefined) return null;
 
   if (items.length === 0) {
     return (
@@ -66,6 +85,21 @@ export function CheckoutContent() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-5">
       <h1 className="text-2xl font-extrabold text-[#16161A] sm:text-3xl">Checkout</h1>
+
+      {/* Buy Now scopes checkout to just that one item — an explicit way
+          back to the real cart in case that wasn't what the shopper meant. */}
+      {buyNowItem && cartItems.length > 0 && (
+        <button
+          type="button"
+          onClick={() => {
+            clearBuyNowItem();
+            setLocalBuyNowItem(null);
+          }}
+          className="mt-2 text-sm font-bold text-primary underline-offset-2 hover:underline"
+        >
+          Checking out 1 item — view full cart ({cartItems.length} item{cartItems.length === 1 ? "" : "s"}) instead
+        </button>
+      )}
 
       <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-[1fr_320px]">
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
