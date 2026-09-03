@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { WALLET_CASHBACK_LABEL } from "@/lib/wallet-rate";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -42,7 +43,7 @@ export default function SignupPage() {
     <div className="mx-auto flex max-w-md flex-col px-5 py-14 sm:py-20">
       <h1 className="text-2xl font-extrabold text-[#16161A] sm:text-3xl">Create your account</h1>
       <p className="mt-2 text-sm text-[#716D67]">
-        Get a wallet, track orders, and earn 3.5% back on every purchase.
+        Get a wallet, track orders, and earn {WALLET_CASHBACK_LABEL} back on every purchase.
       </p>
 
       <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-4">

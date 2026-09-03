@@ -11,6 +11,7 @@ import { WishlistButton } from "@/components/product/wishlist-button";
 import { Price } from "@/components/shared/price";
 import { cheapestVariant } from "@/lib/product-price";
 import { getSpecIcon } from "@/lib/spec-icons";
+import { WALLET_CASHBACK_LABEL } from "@/lib/wallet-rate";
 
 // Price, stock, color/size picker, quantity, and Add to Cart all live here
 // together — once a variant is selected, the price and stock shown above
@@ -305,7 +306,7 @@ export function AddToCartSection({ product }: { product: Product }) {
 
       {!isAffiliate && (
         <p className={`text-[11px] text-[#8B8880] ${isDigital ? "mt-1.5 text-left" : "mt-3 text-center"}`}>
-          3.5% back in your ODTSI Wallet on this order
+          {WALLET_CASHBACK_LABEL} back in your ODTSI Wallet on this order
         </p>
       )}
       </div>

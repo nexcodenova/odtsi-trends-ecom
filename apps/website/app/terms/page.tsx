@@ -60,13 +60,13 @@ export default function TermsPage() {
 
       <h2>6. Refunds and returns</h2>
       <p>
-        Our full refund and returns terms, including our money-back guarantee, are set out in our{" "}
+        Our full delivery, returns, and refund terms are set out in our{" "}
         <a href="/returns" className="font-bold text-primary underline-offset-2 hover:underline">
-          Returns &amp; Refund Policy
-        </a>
-        . Nothing in these Terms limits the statutory rights you have as a consumer under the law of your country
-        of residence — including the 14-day right of withdrawal available to UK and EU consumers under distance
-        selling law.
+          Shipping &amp; Returns
+        </a>{" "}
+        page. Nothing in these Terms limits the statutory rights you have as a consumer under the law of your
+        country of residence — including the right of withdrawal available to UK and EU consumers under distance
+        selling law, where applicable.
       </p>
 
       <h2>7. Your account</h2>

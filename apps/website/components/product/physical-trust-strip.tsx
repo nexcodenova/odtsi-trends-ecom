@@ -3,12 +3,13 @@ import { Truck, ShieldCheck, RotateCcw, Star } from "lucide-react";
 // Physical's equivalent of DigitalTrustStrip — same full-width, colorful-icon
 // treatment, replacing the old narrower in-column benefits row + separate
 // SecureCheckoutStrip bar with one consistent strip. Every tile is a real
-// claim already made elsewhere on this site (shipping, checkout, returns)
-// — no invented numbers, same rule as the digital version.
+// claim matching our real Returns & Refund Policy (/returns) — items are
+// sourced/made to order, so it's damaged/defective/wrong-item coverage,
+// not a blanket "return for any reason" guarantee.
 const ITEMS = [
-  { icon: Truck, color: "text-[#2F6FED]", bg: "bg-[#EAF1FE]", title: "Free Shipping", subtitle: "Fast & Tracked Delivery" },
+  { icon: Truck, color: "text-[#2F6FED]", bg: "bg-[#EAF1FE]", title: "Free Shipping", subtitle: "Tracked Delivery" },
   { icon: ShieldCheck, color: "text-primary", bg: "bg-primary-light", title: "Secure Checkout", subtitle: "SSL Encrypted" },
-  { icon: RotateCcw, color: "text-[#D97706]", bg: "bg-[#FEF3E2]", title: "Money-Back Guarantee", subtitle: "30-Day Returns" },
+  { icon: RotateCcw, color: "text-[#D97706]", bg: "bg-[#FEF3E2]", title: "Damage Protection", subtitle: "Free Replacement" },
   { icon: Star, color: "text-action-ink", bg: "bg-action/15", title: "Trusted by Customers", subtitle: "Genuine Products" },
 ];
 

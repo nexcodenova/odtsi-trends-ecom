@@ -4,6 +4,7 @@ import { getWallet, type Wallet } from "@odtsi/exiuscart-client";
 import { getSession } from "@/lib/session";
 import { formatCurrency } from "@odtsi/utils";
 import { LogoutButton } from "@/components/account/logout-button";
+import { WALLET_CASHBACK_LABEL } from "@/lib/wallet-rate";
 
 async function loadWallet(token: string): Promise<Wallet | null> {
   try {
@@ -27,7 +28,7 @@ export default async function WalletPage() {
 
         <h1 className="mt-5 text-2xl font-extrabold text-[#16161A] sm:text-3xl">Your ODTSI Wallet</h1>
         <p className="mt-3 text-sm leading-relaxed text-[#716D67] sm:text-base">
-          Earn <span className="font-bold text-primary">3.5% back</span> on every purchase, credited straight to your
+          Earn <span className="font-bold text-primary">{WALLET_CASHBACK_LABEL} back</span> on every purchase, credited straight to your
           wallet — use it on your next order, no minimum spend, no expiry.
         </p>
 
@@ -66,7 +67,7 @@ export default async function WalletPage() {
         Welcome back, {session.customer.name.split(" ")[0]}
       </h1>
       <p className="mt-3 text-sm leading-relaxed text-[#716D67] sm:text-base">
-        Earn <span className="font-bold text-primary">3.5% back</span> on every purchase, credited straight to your
+        Earn <span className="font-bold text-primary">{WALLET_CASHBACK_LABEL} back</span> on every purchase, credited straight to your
         wallet.
       </p>
 
