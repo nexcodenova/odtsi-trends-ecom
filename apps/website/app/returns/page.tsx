@@ -75,8 +75,8 @@ export default function ReturnsPage() {
           Contact page
         </a>{" "}
         or email{" "}
-        <a href="mailto:support@odtsi.com" className="font-bold text-primary underline-offset-2 hover:underline">
-          support@odtsi.com
+        <a href="mailto:enquery@odtsi.com" className="font-bold text-primary underline-offset-2 hover:underline">
+          enquery@odtsi.com
         </a>
         , and we&rsquo;ll guide you through the next steps.
       </p>

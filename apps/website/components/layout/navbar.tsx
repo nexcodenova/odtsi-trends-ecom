@@ -4,10 +4,11 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import Image from "next/image";
-import { Heart, Menu, Search, ShoppingCart, User, ChevronDown, Flame, Tag, Layers, Gift, Newspaper, Wallet, Brain, X } from "lucide-react";
+import { Heart, Menu, ShoppingCart, User, ChevronDown, Flame, Tag, Layers, Gift, Newspaper, Wallet, Brain, X } from "lucide-react";
 import type { Category } from "@odtsi/exiuscart-client";
 import { useCart } from "@/hooks/use-cart";
 import { useWishlist } from "@/hooks/use-wishlist";
+import { SearchBar } from "@/components/layout/search-bar";
 
 const QUICK_LINKS = [
   { label: "Trending Now", href: "/collection/trending", icon: Flame },
@@ -329,19 +330,8 @@ export function Navbar({ categories }: { categories: Category[] }) {
         </Link>
 
         {/* Search — inline on desktop, its own full-width row on mobile (below) */}
-        <div className="ml-4 hidden h-10 max-w-2xl flex-1 items-stretch overflow-hidden rounded-full bg-white/90 sm:flex">
-          <input
-            type="search"
-            placeholder="Search products..."
-            className="flex-1 bg-transparent px-4 text-base text-primary outline-none placeholder:text-primary/50"
-          />
-          <button
-            type="button"
-            aria-label="Search"
-            className="flex w-12 items-center justify-center rounded-r-full bg-action text-action-ink"
-          >
-            <Search size={18} />
-          </button>
+        <div className="ml-4 hidden h-10 max-w-2xl flex-1 sm:flex">
+          <SearchBar />
         </div>
 
         {/* Wallet/Wishlist/Need to Talk — right side, right after the search
@@ -375,20 +365,7 @@ export function Navbar({ categories }: { categories: Category[] }) {
 
       {/* Mobile-only search row — search is too important to hide behind a tap on an e-commerce site. Always visible. */}
       <div className="flex h-14 items-stretch bg-primary px-4 pb-3 sm:hidden">
-        <div className="flex flex-1 items-stretch overflow-hidden rounded-full bg-white/90">
-          <input
-            type="search"
-            placeholder="Search products..."
-            className="flex-1 bg-transparent px-4 text-sm text-primary outline-none placeholder:text-primary/50"
-          />
-          <button
-            type="button"
-            aria-label="Search"
-            className="flex w-14 items-center justify-center rounded-r-full bg-action text-action-ink"
-          >
-            <Search size={16} />
-          </button>
-        </div>
+        <SearchBar size="sm" />
       </div>
 
       {/* Row 2 — collapses on scroll-down, reappears on scroll-up. Fixed max-height

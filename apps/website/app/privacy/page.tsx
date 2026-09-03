@@ -101,8 +101,8 @@ export default function PrivacyPage() {
       <h2>11. Contact us</h2>
       <p>
         Questions about this policy or your data? Email us at{" "}
-        <a href="mailto:privacy@odtsi.com" className="font-bold text-primary underline-offset-2 hover:underline">
-          privacy@odtsi.com
+        <a href="mailto:enquery@odtsi.com" className="font-bold text-primary underline-offset-2 hover:underline">
+          enquery@odtsi.com
         </a>{" "}
         or use our{" "}
         <a href="/contact" className="font-bold text-primary underline-offset-2 hover:underline">

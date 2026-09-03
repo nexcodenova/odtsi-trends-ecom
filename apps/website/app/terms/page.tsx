@@ -105,8 +105,8 @@ export default function TermsPage() {
       <h2>12. Contact us</h2>
       <p>
         Questions about these Terms? Email{" "}
-        <a href="mailto:support@odtsi.com" className="font-bold text-primary underline-offset-2 hover:underline">
-          support@odtsi.com
+        <a href="mailto:enquery@odtsi.com" className="font-bold text-primary underline-offset-2 hover:underline">
+          enquery@odtsi.com
         </a>{" "}
         or use our{" "}
         <a href="/contact" className="font-bold text-primary underline-offset-2 hover:underline">

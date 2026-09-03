@@ -216,10 +216,14 @@ async function loadCategorySlugMap(): Promise<Map<string, string>> {
   }
 }
 
-export async function getProducts(params?: { category?: string; collection?: string }): Promise<Product[]> {
+export async function getProducts(params?: { category?: string; collection?: string; search?: string }): Promise<Product[]> {
   const query = new URLSearchParams();
   if (params?.category) query.set("category", params.category);
   if (params?.collection) query.set("collection", params.collection);
+  // Real server-side search — confirmed live 2026-09-03 that ExiusCart's
+  // /products endpoint actually filters on this param (not just ignoring
+  // it), so search results are real matches, not a client-side guess.
+  if (params?.search) query.set("search", params.search);
   const qs = query.toString();
 
   const [res, categorySlugById] = await Promise.all([
