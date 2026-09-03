@@ -14,6 +14,7 @@ import { ReviewsSection } from "@/components/product/reviews-section";
 import { SecureCheckoutStrip } from "@/components/product/secure-checkout-strip";
 import { ProductFaqSection } from "@/components/product/product-faq";
 import { RelatedProducts } from "@/components/product/related-products";
+import { DigitalTrustStrip } from "@/components/product/digital-trust-strip";
 import { parseProductDescription } from "@/lib/parse-product-description";
 import { getSession } from "@/lib/session";
 import { displayPrice } from "@/lib/product-price";
@@ -148,6 +149,17 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           {!isAffiliate && <SecureCheckoutStrip />}
         </div>
       </div>
+
+      {/* Full-width, digital only — makes it obvious at a glance that this
+          isn't a physical product, right below the fold where the shopper
+          already is. No invented numbers (no "10,000+ customers", no
+          fabricated star rating) — every tile is either a plain fact or a
+          qualitative claim. */}
+      {product.productType === "digital" && (
+        <div className="mt-10">
+          <DigitalTrustStrip />
+        </div>
+      )}
 
       {hasTiers && (
         <div className="mt-10 border-t border-black/5 pt-8">
