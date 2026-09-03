@@ -121,7 +121,7 @@ export function AddToCartSection({ product }: { product: Product }) {
         <Price amount={currentPrice} currency={product.currency} className="text-[30px] font-extrabold text-[#16161A]" />
         {hasDiscount &&
           (isDigital ? (
-            <span className="rounded-full border border-[#B91C1C] px-3 py-1 text-xs font-extrabold text-[#B91C1C]">
+            <span className="-mt-2.5 rounded-full border border-[#B91C1C] px-3 py-1 text-xs font-extrabold text-[#B91C1C] self-start">
               Save <Price amount={savings} currency={product.currency} />
             </span>
           ) : (
