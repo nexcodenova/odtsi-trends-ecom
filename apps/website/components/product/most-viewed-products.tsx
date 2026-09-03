@@ -36,7 +36,7 @@ export async function MostViewedProducts({ excludeId }: { excludeId: string }) {
     <div className="mt-10 border-t border-black/5 pt-8">
       <h2 className="text-center text-xs font-extrabold uppercase tracking-wide text-[#8B8880]">Most Viewed</h2>
       <div className="mt-4">
-        <ProductCarousel products={products} />
+        <ProductCarousel products={products} compact />
       </div>
     </div>
   );

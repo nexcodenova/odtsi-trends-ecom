@@ -13,6 +13,11 @@ import { cheapestVariant, displayPrice } from "@/lib/product-price";
 
 interface ProductCardProps {
   product: Product;
+  // Smaller icon-only Add to Cart instead of the full-width labeled
+  // button — used in the denser bottom-of-product-page carousels
+  // (Most Loved by Customers, Most Viewed) so more cards fit per row
+  // without the button dominating each card.
+  compact?: boolean;
 }
 
 // Best real multi-buy saving on this product, if any tier is actually
@@ -28,7 +33,7 @@ function bestTierDeal(product: Product, price: number): { tier: QuantityTier; sa
   return best;
 }
 
-export function ProductCard({ product }: ProductCardProps) {
+export function ProductCard({ product, compact }: ProductCardProps) {
   const [justAdded, setJustAdded] = useState(false);
   // Starts false on the server (no localStorage there) and syncs on mount.
   const [saved, setSaved] = useState(false);
@@ -169,17 +174,40 @@ export function ProductCard({ product }: ProductCardProps) {
       <div className="flex-1" />
 
       {isAffiliate ? (
-        <a
-          href={product.affiliateUrl ?? "#"}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={(e) => e.stopPropagation()}
-          className="mt-3 flex h-9 w-full items-center justify-center gap-1.5 rounded-xl bg-primary text-xs font-extrabold text-white shadow-[0_6px_16px_-6px_rgba(27,42,94,0.5)] transition hover:bg-primary-hover sm:h-12 sm:gap-2 sm:text-base"
+        compact ? (
+          <a
+            href={product.affiliateUrl ?? "#"}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            aria-label={product.affiliateCtaText || "Buy Now"}
+            className="mt-3 ml-auto flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-white shadow-[0_4px_12px_-6px_rgba(27,42,94,0.5)] transition hover:bg-primary-hover"
+          >
+            <ExternalLink size={14} />
+          </a>
+        ) : (
+          <a
+            href={product.affiliateUrl ?? "#"}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="mt-3 flex h-9 w-full items-center justify-center gap-1.5 rounded-xl bg-primary text-xs font-extrabold text-white shadow-[0_6px_16px_-6px_rgba(27,42,94,0.5)] transition hover:bg-primary-hover sm:h-12 sm:gap-2 sm:text-base"
+          >
+            <ExternalLink size={14} className="sm:hidden" />
+            <ExternalLink size={18} className="hidden sm:block" />
+            {product.affiliateCtaText || "Buy Now"}
+          </a>
+        )
+      ) : compact ? (
+        <button
+          type="button"
+          onClick={handleAdd}
+          disabled={!product.inStock}
+          aria-label={justAdded ? "Added to cart" : "Add to cart"}
+          className="mt-3 ml-auto flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#F6C935] to-[#C99200] text-[#16161A] shadow-[0_4px_12px_-6px_rgba(201,146,0,0.55)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none disabled:from-[#e5e5e5] disabled:to-[#e5e5e5]"
         >
-          <ExternalLink size={14} className="sm:hidden" />
-          <ExternalLink size={18} className="hidden sm:block" />
-          {product.affiliateCtaText || "Buy Now"}
-        </a>
+          {justAdded ? <Check size={14} /> : <ShoppingCart size={14} />}
+        </button>
       ) : (
         <button
           type="button"

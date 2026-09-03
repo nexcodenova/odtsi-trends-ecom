@@ -4,11 +4,17 @@ import { ProductCarousel } from "@/components/home/product-carousel";
 // Same category, any product type — physical, digital, or affiliate can all
 // show up here, unlike the homepage rows which split by type. A shopper
 // browsing a category doesn't care which fulfillment path a product takes,
-// only that it's related to what they're already looking at.
+// only that it's related to what they're already looking at. Sorted by
+// real view count within the category, highest first — same "most viewed"
+// idea as the homepage section, just scoped to this category instead of
+// site-wide.
 async function loadRelated(categorySlug: string, excludeId: string): Promise<Product[]> {
   try {
     const products = await getProducts({ category: categorySlug });
-    return products.filter((p) => p.id !== excludeId).slice(0, 12);
+    return products
+      .filter((p) => p.id !== excludeId)
+      .sort((a, b) => (b.viewCount ?? 0) - (a.viewCount ?? 0))
+      .slice(0, 12);
   } catch {
     return [];
   }
@@ -27,10 +33,10 @@ export async function RelatedProducts({ categorySlug, excludeId }: { categorySlu
   return (
     <div className="mt-10 border-t border-black/5 pt-8">
       <h2 className="text-center text-xs font-extrabold uppercase tracking-wide text-[#8B8880]">
-        More From This Category
+        Most Loved by Customers
       </h2>
       <div className="mt-4">
-        <ProductCarousel products={products} />
+        <ProductCarousel products={products} compact />
       </div>
     </div>
   );
