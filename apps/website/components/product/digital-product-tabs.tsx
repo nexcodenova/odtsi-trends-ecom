@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import type { ProductFaq, ProductReview } from "@odtsi/exiuscart-client";
+import type { ProductFaq, ProductReview, ProductSpec } from "@odtsi/exiuscart-client";
 import { DescriptionSection } from "@/components/product/description-section";
 import { ProductFaqSection } from "@/components/product/product-faq";
 import { ReviewsSection } from "@/components/product/reviews-section";
+import { getSpecIcon } from "@/lib/spec-icons";
 
 interface DescriptionImage {
   src: string;
@@ -22,16 +23,18 @@ interface Props {
   // Real seller-set tags — already coming back from ExiusCart on every
   // product, just never mapped or shown until now.
   tags: string[];
+  // Real seller-set highlights (icon + label) — same data shown in the
+  // hero checklist, surfaced here too as a proper specs card. Still not a
+  // label:value table (Duration: 12 months, Compatibility: ...) — that
+  // needs real structured fields ExiusCart doesn't send. This is the
+  // honest version of "Specifications" with the data that actually exists.
+  specs: ProductSpec[];
 }
 
-type TabId = "description" | "faq" | "reviews";
+type TabId = "description" | "specifications" | "faq" | "reviews";
 
 // Digital-only tabbed layout, replacing the continuous-scroll section order
-// physical/affiliate pages use. Only real data backs these three tabs — no
-// "Specifications" tab here, since ExiusCart's real spec field (`specs`) is
-// a flat list of short highlight strings, not the label:value pairs a real
-// specs table needs. That's a real gap to ask ExiusCart about, not
-// something to fake with invented rows.
+// physical/affiliate pages use.
 export function DigitalProductTabs({
   slug,
   description,
@@ -41,9 +44,11 @@ export function DigitalProductTabs({
   reviews,
   isLoggedIn,
   tags,
+  specs,
 }: Props) {
   const tabs: { id: TabId; label: string }[] = [];
   if (description) tabs.push({ id: "description", label: "Description" });
+  if (specs.length > 0) tabs.push({ id: "specifications", label: "Specifications" });
   if (faq.length > 0) tabs.push({ id: "faq", label: "FAQ" });
   tabs.push({ id: "reviews", label: reviews.length > 0 ? `Reviews (${reviews.length})` : "Reviews" });
 
@@ -83,6 +88,21 @@ export function DigitalProductTabs({
                 ))}
               </div>
             )}
+          </div>
+        )}
+        {active === "specifications" && (
+          <div className="mx-auto grid max-w-2xl gap-3 sm:grid-cols-2">
+            {specs.map((spec) => {
+              const Icon = getSpecIcon(spec.icon);
+              return (
+                <div key={spec.label} className="flex items-center gap-3 rounded-xl border border-black/10 px-4 py-3">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-light text-primary">
+                    <Icon size={17} />
+                  </span>
+                  <span className="text-sm font-semibold text-[#16161A]">{spec.label}</span>
+                </div>
+              );
+            })}
           </div>
         )}
         {active === "faq" && <ProductFaqSection faq={faq} />}

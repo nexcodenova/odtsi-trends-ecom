@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { ChevronDown } from "lucide-react";
 import { ImageLens } from "@/components/product/image-lens";
 import { VARIANT_IMAGE_EVENT, type VariantImageDetail } from "@/lib/notify";
 
@@ -22,13 +23,24 @@ const MAX_RAIL_THUMBS = 6;
 
 export function ProductGallery({ images, productName, badge, compact }: ProductGalleryProps) {
   const [active, setActive] = useState(0);
+  // Which page of the rail is showing — the rail only ever displays
+  // MAX_RAIL_THUMBS at once, side-by-side never spilling into a row below
+  // the main image. The chevron button pages through the rest in chunks,
+  // wrapping back to the start after the last page.
+  const [railPage, setRailPage] = useState(0);
   // Set when a color/size variant is picked in AddToCartSection (a sibling,
   // not a parent/child, so this arrives via event rather than a prop) —
   // takes over the main display until the shopper clicks a thumbnail again.
   const [variantImage, setVariantImage] = useState<string | null>(null);
   const activeImage = variantImage ?? images[active] ?? images[0];
-  const railImages = images.slice(0, MAX_RAIL_THUMBS);
-  const overflowImages = images.slice(MAX_RAIL_THUMBS);
+  const hasMoreThanRail = images.length > MAX_RAIL_THUMBS;
+  const railStart = railPage * MAX_RAIL_THUMBS;
+  const railImages = images.slice(railStart, railStart + MAX_RAIL_THUMBS);
+
+  function nextRailPage() {
+    const start = railStart + MAX_RAIL_THUMBS;
+    setRailPage(start >= images.length ? 0 : railPage + 1);
+  }
 
   useEffect(() => {
     function handle(e: Event) {
@@ -70,14 +82,27 @@ export function ProductGallery({ images, productName, badge, compact }: ProductG
       }`}
     >
       {images.length > 1 && (
-        // justify-between: first thumbnail flush with the main image's top
-        // corner, last one flush with its bottom corner, everything between
-        // auto-spaced with equal gaps — not a fixed gap-* value, since the
-        // right gap size depends on how many thumbnails there are. Hidden on
-        // mobile for compact (digital) galleries — the horizontal strip
-        // below the main image covers thumbnail navigation there instead.
-        <div className={`h-full flex-col justify-between ${compact ? "hidden sm:flex" : "flex"}`}>
-          {railImages.map((src, i) => renderThumb(src, i))}
+        // Physical: justify-between spreads thumbnails top-to-bottom to
+        // match the main image's height edge-to-edge. Digital's compact
+        // gallery is much taller relative to how few thumbnails a real
+        // digital product tends to have, so justify-between there left a
+        // huge empty gap between 2-3 thumbnails — packed from the top with
+        // a fixed gap instead. Hidden on mobile for compact — the
+        // horizontal strip below the main image covers navigation there.
+        <div
+          className={`h-full flex-col ${compact ? "hidden gap-3 sm:flex" : "flex justify-between"}`}
+        >
+          {railImages.map((src, i) => renderThumb(src, railStart + i))}
+          {hasMoreThanRail && (
+            <button
+              type="button"
+              onClick={nextRailPage}
+              aria-label="Show more images"
+              className="flex h-8 w-8 flex-shrink-0 items-center justify-center self-center rounded-full border border-black/10 bg-white text-[#4A4844] shadow-sm transition hover:text-primary"
+            >
+              <ChevronDown size={16} />
+            </button>
+          )}
         </div>
       )}
 
@@ -87,7 +112,7 @@ export function ProductGallery({ images, productName, badge, compact }: ProductG
           // this stays a consistent size regardless of column width and can
           // visually height-match the info column beside it. object-contain
           // below still shows the full asset uncropped either way.
-          compact ? "h-[320px] sm:h-[420px] lg:h-[500px] xl:h-[530px]" : "aspect-[3/4] sm:aspect-[4/5]"
+          compact ? "h-[320px] sm:h-[420px] lg:h-[560px] xl:h-[590px]" : "aspect-[3/4] sm:aspect-[4/5]"
         }`}
       >
         {activeImage ? (
@@ -120,18 +145,11 @@ export function ProductGallery({ images, productName, badge, compact }: ProductG
       {/* Mobile-only horizontal thumbnail strip for compact galleries — the
           vertical rail is hidden below sm, so without this there'd be no
           way to switch images at all on a phone, just a counter badge with
-          nothing to tap. */}
+          nothing to tap. Scrolls through every image directly (no paging
+          needed — horizontal scroll is already the "more" affordance). */}
       {compact && images.length > 1 && (
         <div className="flex gap-2 overflow-x-auto pb-1 sm:hidden">
-          {railImages.map((src, i) => renderThumb(src, i))}
-        </div>
-      )}
-
-      {/* Same grid column as the main image, not the rail — its left edge
-          lines up with the main image's, not the narrower rail's. */}
-      {overflowImages.length > 0 && (
-        <div style={{ gridColumn: images.length > 1 ? 2 : 1 }} className="flex gap-2 overflow-x-auto pb-1">
-          {overflowImages.map((src, i) => renderThumb(src, MAX_RAIL_THUMBS + i))}
+          {images.map((src, i) => renderThumb(src, i))}
         </div>
       )}
     </div>

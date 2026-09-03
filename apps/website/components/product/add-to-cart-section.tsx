@@ -10,6 +10,7 @@ import { notifyAdded, notifyVariantImage } from "@/lib/notify";
 import { WishlistButton } from "@/components/product/wishlist-button";
 import { Price } from "@/components/shared/price";
 import { cheapestVariant } from "@/lib/product-price";
+import { getSpecIcon } from "@/lib/spec-icons";
 
 // Price, stock, color/size picker, quantity, and Add to Cart all live here
 // together — once a variant is selected, the price and stock shown above
@@ -119,7 +120,7 @@ export function AddToCartSection({ product }: { product: Product }) {
         <Price amount={currentPrice} currency={product.currency} className="text-[30px] font-extrabold text-[#16161A]" />
         {hasDiscount &&
           (isDigital ? (
-            <span className="rounded-full border border-[#E53E3E]/30 bg-[#FDECEC] px-3 py-1 text-xs font-extrabold text-[#C0281C]">
+            <span className="text-[15px] font-extrabold text-[#B91C1C]">
               Save <Price amount={savings} currency={product.currency} />
             </span>
           ) : (
@@ -141,19 +142,22 @@ export function AddToCartSection({ product }: { product: Product }) {
         </p>
       )}
 
-      {/* Real per-product highlight strings from ExiusCart (product.specs)
-          — empty on every real product today, so this renders nothing
-          until a seller actually sets them. No invented "Duration" /
-          "Compatibility" rows here — those would need real structured
-          fields ExiusCart doesn't send yet. */}
+      {/* Real per-product highlights from ExiusCart (product.specs, mapped
+          from their real `highlights` field) — renders nothing until a
+          seller actually sets any. Each entry's real icon name is mapped
+          to an actual icon component, not hardcoded to one icon for every
+          row. */}
       {isDigital && product.specs.length > 0 && (
         <div className="mt-4 flex flex-col gap-2">
-          {product.specs.map((spec) => (
-            <div key={spec.label} className="flex items-center gap-2.5 text-[14px] text-[#4A4844]">
-              <CheckCircle2 size={17} className="shrink-0 text-status" />
-              {spec.label}
-            </div>
-          ))}
+          {product.specs.map((spec) => {
+            const Icon = getSpecIcon(spec.icon);
+            return (
+              <div key={spec.label} className="flex items-center gap-2.5 text-[14px] text-[#4A4844]">
+                <Icon size={17} className="shrink-0 text-status" />
+                {spec.label}
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -223,7 +227,7 @@ export function AddToCartSection({ product }: { product: Product }) {
       )}
 
       {!isAffiliate && (
-        <div className="mt-5">
+        <div className={isDigital ? "mt-3" : "mt-5"}>
           <p className="mb-1.5 text-xs font-bold uppercase tracking-wide text-[#8B8880]">Quantity</p>
           <div className="flex w-fit items-center rounded-xl border border-black/10">
             <button
@@ -248,7 +252,7 @@ export function AddToCartSection({ product }: { product: Product }) {
         </div>
       )}
 
-      <div className="mt-5 flex items-center gap-3">
+      <div className={`flex items-center gap-3 ${isDigital ? "mt-4" : "mt-5"}`}>
         {isAffiliate ? (
           <a
             href={product.affiliateUrl ?? "#"}
@@ -264,7 +268,9 @@ export function AddToCartSection({ product }: { product: Product }) {
             type="button"
             onClick={handleAdd}
             disabled={!inStock || (hasVariants && !selectedVariant)}
-            className={`flex h-[58px] w-full max-w-[360px] items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-[#F6C935] to-[#C99200] text-[16px] font-extrabold text-[#16161A] shadow-[0_10px_24px_-8px_rgba(201,146,0,0.55)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none`}
+            className={`flex w-full max-w-[360px] items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-[#F6C935] to-[#C99200] text-[16px] font-extrabold text-[#16161A] shadow-[0_10px_24px_-8px_rgba(201,146,0,0.55)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none ${
+              isDigital ? "h-[50px]" : "h-[58px]"
+            }`}
           >
             {!inStock ? null : justAdded ? <Check size={19} /> : <ShoppingCart size={19} />}
             {!inStock ? "Out of Stock" : justAdded ? "Added to Cart" : "Add to Cart"}
@@ -284,21 +290,21 @@ export function AddToCartSection({ product }: { product: Product }) {
           type="button"
           onClick={handleBuyNow}
           disabled={!inStock || (hasVariants && !selectedVariant)}
-          className="mt-3 h-[58px] w-full max-w-[360px] rounded-2xl bg-primary text-[16px] font-extrabold text-white shadow-[0_10px_24px_-8px_rgba(27,42,94,0.5)] transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
+          className="mt-2.5 h-[50px] w-full max-w-[360px] rounded-2xl bg-primary text-[16px] font-extrabold text-white shadow-[0_10px_24px_-8px_rgba(27,42,94,0.5)] transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
         >
           Buy Now
         </button>
       )}
 
       {isDigital && (
-        <p className="mt-3 flex items-center gap-1.5 text-[12px] font-semibold text-status">
+        <p className="mt-2 flex items-center gap-1.5 text-[12px] font-semibold text-status">
           <CheckCircle2 size={14} />
           Digital product • No physical shipping
         </p>
       )}
 
       {!isAffiliate && (
-        <p className={`mt-3 text-[11px] text-[#8B8880] ${isDigital ? "text-left" : "text-center"}`}>
+        <p className={`text-[11px] text-[#8B8880] ${isDigital ? "mt-1.5 text-left" : "mt-3 text-center"}`}>
           3.5% back in your ODTSI Wallet on this order
         </p>
       )}

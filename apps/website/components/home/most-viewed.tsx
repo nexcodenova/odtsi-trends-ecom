@@ -2,12 +2,12 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { getProducts, type Product } from "@odtsi/exiuscart-client";
 import { ProductCarousel } from "@/components/home/product-carousel";
+import { MIN_VIEWS_FOR_POPULAR } from "@/lib/product-thresholds";
 
 // "Top Rated" isn't buildable yet — every real product currently has
 // avg_rating: null and review_count: 0, nothing to rank by honestly. Real
 // view counts do have genuine variance today, so this ranks by those
 // instead. Swap the sort to rating once real reviews start coming in.
-const MIN_VIEWS = 50;
 
 async function loadMostViewed(): Promise<Product[]> {
   try {
@@ -21,7 +21,7 @@ async function loadMostViewed(): Promise<Product[]> {
         (p) =>
           (p.productType === "physical" || p.productType === "digital") &&
           p.viewCount !== null &&
-          p.viewCount > MIN_VIEWS,
+          p.viewCount > MIN_VIEWS_FOR_POPULAR,
       )
       .sort((a, b) => (b.viewCount ?? 0) - (a.viewCount ?? 0))
       .slice(0, 12);

@@ -1,10 +1,18 @@
 import { storeUrl } from "./config";
 import { getCategories } from "./categories";
-import type { Product, ProductFaq, ProductType, ProductVariant, QuantityTier, ProductVideo } from "./types";
+import type { Product, ProductFaq, ProductSpec, ProductType, ProductVariant, QuantityTier, ProductVideo } from "./types";
 
 interface RawFaq {
   question: string;
   answer: string;
+}
+
+interface RawHighlight {
+  // A kebab-case icon identifier (e.g. "check-circle", "mail") — mapping
+  // this to an actual icon component is a UI concern, done where it's
+  // rendered, not here.
+  icon: string;
+  label: string;
 }
 
 interface RawQuantityTier {
@@ -77,10 +85,26 @@ interface RawProduct {
   // still map safely.
   faq?: RawFaq[];
   shipping_note?: string | null;
+  // Confirmed live 2026-09-03 — the real per-product highlight/spec field
+  // we'd asked ExiusCart for (icon + label pairs, e.g. "1 Year premium
+  // Access"). Optional the same way as everything else added after launch.
+  highlights?: RawHighlight[];
+  // Real resolved category slug sent directly on the product now — no
+  // longer need to cross-reference /categories by id for this (kept as a
+  // fallback below in case an older cached response lacks it).
+  category_slug?: string;
+  // Real aggregate rating/review count fields, confirmed live alongside
+  // highlights — null/0 until a product actually has reviews.
+  avg_rating?: number | null;
+  review_count?: number;
 }
 
 function mapFaq(raw: RawFaq[] | undefined): ProductFaq[] {
   return (raw ?? []).map((f) => ({ question: f.question, answer: f.answer }));
+}
+
+function mapHighlights(raw: RawHighlight[] | undefined): ProductSpec[] {
+  return (raw ?? []).map((h) => ({ icon: h.icon, label: h.label }));
 }
 
 function mapVariants(raw: RawVariant[] | undefined): ProductVariant[] {
@@ -143,25 +167,25 @@ function mapProduct(raw: RawProduct, categorySlugById: Map<string, string>): Pro
     imageUrl: raw.images[0] ?? "",
     images: raw.images,
     videos: mapVideos(raw),
-    // Real category slug, resolved from /categories — confirmed live
-    // 2026-09-01 that Storefront Categories IS set up now (real slugs like
-    // "fashion-390a8b"), and that filtering /products?category= by the
-    // numeric id (what this used to send) silently returns zero results,
-    // while the real slug works. Falls back to the stringified id only if
-    // the category ever isn't found in the map (shouldn't happen for a
-    // real category_id, but keeps a bad id from crashing the page).
+    // Real category slug — ExiusCart now sends it directly on the product
+    // (confirmed live 2026-09-03), so this no longer depends on the
+    // /categories cross-reference except as a fallback for an older
+    // cached response that predates the field.
     categorySlug:
-      raw.category_id !== null
+      raw.category_slug ??
+      (raw.category_id !== null
         ? (categorySlugById.get(String(raw.category_id)) ?? String(raw.category_id))
-        : "uncategorized",
+        : "uncategorized"),
     inStock: raw.in_stock,
     stockCount: raw.quantity,
     // Bundle isn't in the public API yet — stays null until it is.
     bundle: null,
     quantityTiers: mapQuantityTiers(raw.quantity_tiers),
-    rating: null,
-    reviewCount: null,
-    specs: [],
+    // Real fields now, confirmed live 2026-09-03 — null/0 until a product
+    // actually has reviews, never a fabricated number.
+    rating: raw.avg_rating ?? null,
+    reviewCount: raw.review_count ?? null,
+    specs: mapHighlights(raw.highlights),
     testimonials: [],
     // Real counters, straight through — null (not 0) when ExiusCart hasn't
     // sent the field at all, so "0" is never confused with "not available".

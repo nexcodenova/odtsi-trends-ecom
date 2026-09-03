@@ -3,8 +3,8 @@ import { notFound } from "next/navigation";
 import { Truck } from "lucide-react";
 import { getProduct, getReviews, type ProductReview } from "@odtsi/exiuscart-client";
 import { ProductGallery } from "@/components/product/product-gallery";
-import { FeatureHighlights } from "@/components/product/feature-highlights";
 import { AddToCartSection } from "@/components/product/add-to-cart-section";
+import { BestSellerBadge } from "@/components/product/best-seller-badge";
 import { WishlistButton } from "@/components/product/wishlist-button";
 import { PackSelector } from "@/components/product/pack-selector";
 import { BundleOfferSection } from "@/components/product/bundle-offer-section";
@@ -20,6 +20,7 @@ import { DigitalProductTabs } from "@/components/product/digital-product-tabs";
 import { parseProductDescription } from "@/lib/parse-product-description";
 import { getSession } from "@/lib/session";
 import { displayPrice } from "@/lib/product-price";
+import { MIN_VIEWS_FOR_POPULAR } from "@/lib/product-thresholds";
 
 async function loadReviews(slug: string): Promise<ProductReview[]> {
   try {
@@ -59,6 +60,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   // affiliate product, which ExiusCart's real checkout hard-rejects with a
   // 400. Gated on productType here too, not just on the data existing.
   const hasTiers = !isAffiliate && product.quantityTiers.length > 0;
+  const isBestSeller = product.viewCount !== null && product.viewCount > MIN_VIEWS_FOR_POPULAR;
   const { blocks: descriptionBlocks, images: descriptionImages } = product.description
     ? parseProductDescription(product.description)
     : { blocks: [], images: [] };
@@ -99,15 +101,32 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
               </div>
             )}
           </div>
-
-          {product.specs.length > 0 && <FeatureHighlights specs={product.specs} />}
         </div>
 
         {/* Fixed height matching the gallery on desktop for digital, plus
             flex so AddToCartSection can stretch and pin its purchase
             controls to the bottom via its own internal mt-auto — the
-            column's bottom edge lines up exactly with the image's. */}
-        <div className={isDigital ? "flex flex-col lg:h-[500px] xl:h-[530px]" : ""}>
+            column's bottom edge lines up exactly with the image's. Sized
+            taller than a physical hero needs to, since a real highlights
+            list (once a seller sets one) adds real height here. */}
+        <div className={isDigital ? "flex flex-col lg:h-[560px] xl:h-[590px]" : ""}>
+          {/* Digi ODTSI: real, honest brand label — true of every real
+              digital product, not a performance claim, so it needs no
+              per-product data. Best Seller: real criterion instead — same
+              >50-real-views bar the homepage's Most Viewed section already
+              uses, reused (not reinvented) via one shared component, so
+              both physical and digital pages judge "popular" the same way. */}
+          {(isDigital || isBestSeller) && (
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+              {isDigital && (
+                <span className="inline-flex w-fit rounded-md bg-primary px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-white">
+                  Digi ODTSI
+                </span>
+              )}
+              <BestSellerBadge viewCount={product.viewCount} />
+            </div>
+          )}
+
           {product.rating !== null && product.reviewCount !== null && (
             <div className="flex items-center gap-2 text-[12.5px] text-[#716D67]">
               <span className="tracking-[1px] text-action">{"★".repeat(Math.round(product.rating))}{"☆".repeat(5 - Math.round(product.rating))}</span>
@@ -117,7 +136,11 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
           <TrustSignals viewCount={product.viewCount} unitsSold={product.unitsSold} />
 
-          <h1 className="mt-2 text-[27px] font-extrabold leading-tight tracking-tight text-[#16161A] sm:text-[32px]">
+          <h1
+            className={`mt-2 font-extrabold leading-tight tracking-tight text-[#16161A] ${
+              isDigital ? "text-[22px] sm:text-[26px]" : "text-[27px] sm:text-[32px]"
+            }`}
+          >
             {product.name}
           </h1>
           {product.tagline && <p className="mt-1.5 text-[14px] text-[#8B8880]">{product.tagline}</p>}
@@ -173,11 +196,8 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       )}
 
       {isDigital ? (
-        // Tabbed layout, digital only — Description/FAQ/Reviews behind
-        // tabs instead of one continuous scroll. No Specifications tab:
-        // product.specs is a flat list of highlight strings (shown in the
-        // hero instead), not the label:value pairs a real specs table
-        // needs — that's a real gap for ExiusCart, not something to fake.
+        // Tabbed layout, digital only — Description/Specifications/FAQ/
+        // Reviews behind tabs instead of one continuous scroll.
         <div className="mt-10 border-t border-black/5 pt-8">
           <DigitalProductTabs
             slug={product.slug}
@@ -188,6 +208,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             reviews={reviews}
             isLoggedIn={session !== null}
             tags={product.tags}
+            specs={product.specs}
           />
         </div>
       ) : (
