@@ -108,8 +108,24 @@ export function ProductCard({ product, compact, sale }: ProductCardProps) {
   );
 
   return (
-    <div className={`flex h-full flex-col rounded-2xl p-3 ${sale ? "border border-black/10 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)]" : ""}`}>
-      <Link href={`/product/${product.slug}`} className="group block">
+    <div className="flex h-full flex-col rounded-2xl p-3">
+      <Link
+        href={`/product/${product.slug}`}
+        className={`group relative block ${sale ? "rounded-xl border border-black/10 bg-white p-2.5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]" : ""}`}
+      >
+        {/* Sale variant: a red corner flag sitting right at the card's own
+            outer corner (pulled out by the card's padding with negative
+            inset, not the image's corner) instead of the usual gold pill
+            next to the price — reads as "this is a deals listing" at a
+            glance. Same real discount number either way. animate-float is
+            the same gentle drift already used elsewhere to draw the eye to
+            a real discount, not a new effect just for this. */}
+        {sale && hasDiscount && (
+          <span className="animate-float absolute -left-2.5 -top-2.5 z-10 rounded-br-xl rounded-tl-xl bg-[#E0342A] py-1.5 pl-2.5 pr-3 text-xs font-extrabold text-white shadow-[0_4px_10px_-4px_rgba(224,52,42,0.6)]">
+            -{discountPct}% OFF
+          </span>
+        )}
+
         <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-white">
           {product.imageUrl ? (
             <Image
@@ -132,15 +148,6 @@ export function ProductCard({ product, compact, sale }: ProductCardProps) {
           {!product.inStock && !isAffiliate && (
             <span className="absolute inset-0 flex items-center justify-center bg-white/70 text-xs font-bold text-[#716D67]">
               Out of stock
-            </span>
-          )}
-
-          {/* Sale variant: a red corner flag instead of the usual gold pill
-              next to the price — reads as "this is a deals listing" at a
-              glance. Same real discount number either way. */}
-          {sale && hasDiscount && (
-            <span className="absolute left-0 top-3 rounded-r-full bg-[#E0342A] py-1 pl-3 pr-3.5 text-xs font-extrabold text-white shadow-[0_4px_10px_-4px_rgba(224,52,42,0.6)]">
-              -{discountPct}% OFF
             </span>
           )}
 
