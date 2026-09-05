@@ -112,7 +112,7 @@ export function ProductGallery({ images, productName, badge, compact }: ProductG
           // this stays a consistent size regardless of column width and can
           // visually height-match the info column beside it. object-contain
           // below still shows the full asset uncropped either way.
-          compact ? "h-[320px] sm:h-[420px] lg:h-[560px] xl:h-[590px]" : "aspect-[3/4] sm:aspect-[4/5]"
+          compact ? "h-[440px] sm:h-[460px] lg:h-[560px] xl:h-[590px]" : "aspect-[3/4] sm:aspect-[4/5]"
         }`}
       >
         {activeImage ? (
