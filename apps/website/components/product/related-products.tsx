@@ -39,7 +39,7 @@ export async function RelatedProducts({ categorySlug, excludeId }: { categorySlu
         Most Loved by Customers
       </h2>
       <div className="mt-4">
-        <ProductCarousel products={products} compact />
+        <ProductCarousel products={products} compact sale />
       </div>
     </div>
   );

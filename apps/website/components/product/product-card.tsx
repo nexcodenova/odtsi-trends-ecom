@@ -157,17 +157,23 @@ export function ProductCard({ product, compact, sale }: ProductCardProps) {
             </span>
           )}
 
-          <button
-            type="button"
-            onClick={handleWishlist}
-            aria-label={saved ? "Remove from wishlist" : "Add to wishlist"}
-            aria-pressed={saved}
-            className={`absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full shadow-sm transition ${
-              saved ? "bg-white text-action" : "bg-white/90 text-[#716D67] hover:text-action"
-            }`}
-          >
-            <Heart size={16} className={saved ? "fill-action" : ""} />
-          </button>
+          {/* Compact cards move this down into the bottom row next to the
+              cart icon instead — two floating overlays on a small image
+              looked cluttered, and it reads better as part of the same
+              action row as Add to Cart. */}
+          {!compact && (
+            <button
+              type="button"
+              onClick={handleWishlist}
+              aria-label={saved ? "Remove from wishlist" : "Add to wishlist"}
+              aria-pressed={saved}
+              className={`absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full shadow-sm transition ${
+                saved ? "bg-white text-action" : "bg-white/90 text-[#716D67] hover:text-action"
+              }`}
+            >
+              <Heart size={16} className={saved ? "fill-action" : ""} />
+            </button>
+          )}
         </div>
 
         <p className="mt-3 line-clamp-2 text-sm font-semibold leading-snug text-[#16161A]">{product.name}</p>
@@ -197,7 +203,7 @@ export function ProductCard({ product, compact, sale }: ProductCardProps) {
           </div>
         )}
 
-        {!isAffiliate && !compact && (
+        {!isAffiliate && !compact && !sale && (
           <p className={`mt-1 text-sm font-bold ${product.inStock ? "text-status" : "text-[#B9412E]"}`}>
             {!product.inStock
               ? "Out of Stock"
@@ -236,7 +242,20 @@ export function ProductCard({ product, compact, sale }: ProductCardProps) {
           ) : (
             <span />
           )}
-          {compactCta}
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={handleWishlist}
+              aria-label={saved ? "Remove from wishlist" : "Add to wishlist"}
+              aria-pressed={saved}
+              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border transition ${
+                saved ? "border-action bg-[#FFFBEF] text-action" : "border-black/10 text-[#716D67] hover:border-black/20 hover:text-action"
+              }`}
+            >
+              <Heart size={14} className={saved ? "fill-action" : ""} />
+            </button>
+            {compactCta}
+          </div>
         </div>
       ) : (
         <>
