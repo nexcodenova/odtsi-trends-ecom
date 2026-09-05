@@ -177,23 +177,24 @@ export function ProductCard({ product, compact, sale }: ProductCardProps) {
             smaller button — and put the stock line and cart icon on one
             row instead of pinning the button to the bottom with empty
             space under it. */}
+        {/* Sale cards drop the rating text and the views row entirely —
+            just the stars, then straight to stock — a shorter card on
+            mobile where height matters more than these secondary details. */}
         {!compact && (
-          <>
-            <div className="mt-1.5 flex items-center gap-1.5 text-sm text-[#8B8880]">
-              <span className="tracking-[1px] text-action">
-                {"★".repeat(Math.round(product.rating ?? 0))}
-                <span className="text-[#D8D5CE]">{"★".repeat(5 - Math.round(product.rating ?? 0))}</span>
-              </span>
-              {product.rating !== null ? `${product.rating.toFixed(1)} (${product.reviewCount ?? 0})` : "No reviews yet"}
-            </div>
+          <div className="mt-1.5 flex items-center gap-1.5 text-sm text-[#8B8880]">
+            <span className="tracking-[1px] text-action">
+              {"★".repeat(Math.round(product.rating ?? 0))}
+              <span className="text-[#D8D5CE]">{"★".repeat(5 - Math.round(product.rating ?? 0))}</span>
+            </span>
+            {!sale && (product.rating !== null ? `${product.rating.toFixed(1)} (${product.reviewCount ?? 0})` : "No reviews yet")}
+          </div>
+        )}
 
-            {product.viewCount !== null && (
-              <div className="mt-1 flex items-center gap-1.5 text-xs text-[#8B8880]">
-                <Eye size={13} />
-                {product.viewCount.toLocaleString()} views
-              </div>
-            )}
-          </>
+        {!compact && !sale && product.viewCount !== null && (
+          <div className="mt-1 flex items-center gap-1.5 text-xs text-[#8B8880]">
+            <Eye size={13} />
+            {product.viewCount.toLocaleString()} views
+          </div>
         )}
 
         {!isAffiliate && !compact && (
