@@ -18,6 +18,10 @@ interface ProductCardProps {
   // (Most Loved by Customers, Most Viewed) so more cards fit per row
   // without the button dominating each card.
   compact?: boolean;
+  // Bordered card + a red corner-flag discount badge instead of the
+  // usual gold pill — used on the On Sale page to read as a deals
+  // listing. Add to Cart stays the exact same button either way.
+  sale?: boolean;
 }
 
 // Best real multi-buy saving on this product, if any tier is actually
@@ -33,7 +37,7 @@ function bestTierDeal(product: Product, price: number): { tier: QuantityTier; sa
   return best;
 }
 
-export function ProductCard({ product, compact }: ProductCardProps) {
+export function ProductCard({ product, compact, sale }: ProductCardProps) {
   const [justAdded, setJustAdded] = useState(false);
   // Starts false on the server (no localStorage there) and syncs on mount.
   const [saved, setSaved] = useState(false);
@@ -104,7 +108,7 @@ export function ProductCard({ product, compact }: ProductCardProps) {
   );
 
   return (
-    <div className="flex h-full flex-col rounded-2xl p-3">
+    <div className={`flex h-full flex-col rounded-2xl p-3 ${sale ? "border border-black/10 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)]" : ""}`}>
       <Link href={`/product/${product.slug}`} className="group block">
         <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-white">
           {product.imageUrl ? (
@@ -128,6 +132,15 @@ export function ProductCard({ product, compact }: ProductCardProps) {
           {!product.inStock && !isAffiliate && (
             <span className="absolute inset-0 flex items-center justify-center bg-white/70 text-xs font-bold text-[#716D67]">
               Out of stock
+            </span>
+          )}
+
+          {/* Sale variant: a red corner flag instead of the usual gold pill
+              next to the price — reads as "this is a deals listing" at a
+              glance. Same real discount number either way. */}
+          {sale && hasDiscount && (
+            <span className="absolute left-0 top-3 rounded-r-full bg-[#E0342A] py-1 pl-3 pr-3.5 text-xs font-extrabold text-white shadow-[0_4px_10px_-4px_rgba(224,52,42,0.6)]">
+              -{discountPct}% OFF
             </span>
           )}
 
@@ -191,7 +204,7 @@ export function ProductCard({ product, compact }: ProductCardProps) {
             <Price amount={product.compareAtPrice!} currency={product.currency} className="text-sm text-[#a3a19c] line-through" />
           )}
           <Price amount={price} currency={product.currency} className="text-xl font-extrabold text-primary" />
-          {hasDiscount && (
+          {hasDiscount && !sale && (
             <span className="rounded-full bg-action px-2.5 py-1 text-xs font-extrabold text-action-ink">
               -{discountPct}%
             </span>

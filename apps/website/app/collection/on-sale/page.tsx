@@ -1,5 +1,6 @@
 import { getProducts, type Product } from "@odtsi/exiuscart-client";
 import { ProductCard } from "@/components/product/product-card";
+import { OnSaleHero } from "@/components/collection/on-sale-hero";
 
 const MIN_DISCOUNT_PCT = 40;
 
@@ -21,26 +22,30 @@ async function loadDeals(): Promise<Product[]> {
 
 export default async function OnSalePage() {
   const products = await loadDeals();
+  // Real max, from the same products actually listed below — never a
+  // rounder/bigger number than what's really in the grid.
+  const maxDiscountPct = products.length > 0 ? Math.round(Math.max(...products.map(discountPct))) : 0;
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-5">
-      <h1 className="text-2xl font-extrabold text-[#16161A] sm:text-3xl">On Sale</h1>
-      <p className="mt-1 text-sm text-[#716D67]">Real products at more than {MIN_DISCOUNT_PCT}% off.</p>
+      <OnSaleHero maxDiscountPct={maxDiscountPct} dealCount={products.length} />
 
-      {products.length > 0 ? (
-        <>
-          <p className="mt-4 text-sm text-[#716D67]">{products.length} products</p>
-          <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+      <div id="deals" className="mt-10 scroll-mt-20">
+        <h2 className="text-2xl font-extrabold text-[#16161A] sm:text-3xl">Today&apos;s Best Deals</h2>
+        <p className="mt-1 text-sm text-[#716D67]">
+          {products.length > 0
+            ? `${products.length} hand-picked ${products.length === 1 ? "offer" : "offers"} • Prices shown before checkout`
+            : `No products are discounted more than ${MIN_DISCOUNT_PCT}% right now — check back soon.`}
+        </p>
+
+        {products.length > 0 && (
+          <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             {products.map((product) => (
-              <ProductCard key={product.id} product={product} />
+              <ProductCard key={product.id} product={product} sale />
             ))}
           </div>
-        </>
-      ) : (
-        <p className="mt-10 text-sm text-[#716D67]">
-          No products are discounted more than {MIN_DISCOUNT_PCT}% right now — check back soon.
-        </p>
-      )}
+        )}
+      </div>
     </div>
   );
 }
