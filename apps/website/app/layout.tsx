@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { Navbar } from "@/components/layout/navbar";
+import { BottomNav } from "@/components/layout/bottom-nav";
 import { Footer } from "@/components/layout/footer";
 import { AddedNotification } from "@/components/shared/added-notification";
 import { getCategories, type Category } from "@odtsi/exiuscart-client";
@@ -30,11 +31,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang="en">
-      <body className={plusJakarta.className}>
+      {/* pb-16 makes room at the bottom of the whole page (footer included)
+          for the fixed mobile tab bar so it never covers real content —
+          sm:pb-0 because the tab bar itself doesn't render at that width. */}
+      <body className={`${plusJakarta.className} pb-16 sm:pb-0`}>
         <Navbar categories={categories} />
         <main>{children}</main>
         <Footer />
         <AddedNotification />
+        <BottomNav categories={categories} />
       </body>
     </html>
   );
