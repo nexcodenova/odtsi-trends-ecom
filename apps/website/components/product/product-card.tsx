@@ -183,16 +183,26 @@ export function ProductCard({ product, compact, sale }: ProductCardProps) {
             smaller button — and put the stock line and cart icon on one
             row instead of pinning the button to the bottom with empty
             space under it. */}
-        {/* Sale cards drop the rating text and the views row entirely —
-            just the stars, then straight to stock — a shorter card on
-            mobile where height matters more than these secondary details. */}
+        {/* Sale cards drop the rating text row entirely — just the stars —
+            and use the space it would've left on the right for the real
+            view count instead of a separate row, keeping the card short
+            on mobile where height matters more than these secondary
+            details. */}
         {!compact && (
-          <div className="mt-1.5 flex items-center gap-1.5 text-sm text-[#8B8880]">
-            <span className="tracking-[1px] text-action">
-              {"★".repeat(Math.round(product.rating ?? 0))}
-              <span className="text-[#D8D5CE]">{"★".repeat(5 - Math.round(product.rating ?? 0))}</span>
+          <div className="mt-1.5 flex items-center justify-between gap-1.5 text-sm text-[#8B8880]">
+            <span className="flex items-center gap-1.5">
+              <span className="tracking-[1px] text-action">
+                {"★".repeat(Math.round(product.rating ?? 0))}
+                <span className="text-[#D8D5CE]">{"★".repeat(5 - Math.round(product.rating ?? 0))}</span>
+              </span>
+              {!sale && (product.rating !== null ? `${product.rating.toFixed(1)} (${product.reviewCount ?? 0})` : "No reviews yet")}
             </span>
-            {!sale && (product.rating !== null ? `${product.rating.toFixed(1)} (${product.reviewCount ?? 0})` : "No reviews yet")}
+            {sale && product.viewCount !== null && (
+              <span className="flex items-center gap-1 text-xs text-[#8B8880]">
+                <Eye size={12} />
+                {product.viewCount.toLocaleString()}
+              </span>
+            )}
           </div>
         )}
 
