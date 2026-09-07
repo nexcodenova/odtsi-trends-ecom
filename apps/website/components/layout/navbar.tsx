@@ -334,15 +334,17 @@ export function Navbar({ categories }: { categories: Category[] }) {
           <SearchBar />
         </div>
 
-        {/* Wallet/Wishlist/Need to Talk — right side, right after the search
-            bar, with a little extra room before the edge of the header. */}
+        {/* Wallet/Wishlist/Cart/Need to Talk — desktop/tablet only now. On
+            mobile the bottom bar already covers all four of these, so
+            keeping them here too would just be the same real counts shown
+            twice on the same screen. Account stays visible on mobile since
+            it's the one destination the bottom bar doesn't carry. */}
         <div className="ml-auto mr-2 flex items-center gap-5 sm:mr-5 sm:gap-7">
           <NavIconLink href="/wallet" label="Wallet" className="hidden sm:flex">
             <Wallet size={24} />
           </NavIconLink>
-          <NavIconLink href="/wishlist" label="Wishlist" count={wishlistItems.length}>
-            <Heart size={22} className="sm:hidden" />
-            <Heart size={24} className="hidden sm:block" />
+          <NavIconLink href="/wishlist" label="Wishlist" className="hidden sm:flex" count={wishlistItems.length}>
+            <Heart size={24} />
           </NavIconLink>
           {/* Deliberately not the small stacked icon+caption style the rest
               of this row uses — bigger text, icon beside it, stands out. */}
@@ -353,9 +355,8 @@ export function Navbar({ categories }: { categories: Category[] }) {
             <Brain size={22} className="animate-pulse" />
             <span className="text-sm font-extrabold">Need to Talk</span>
           </Link>
-          <NavIconLink href="/cart" label="Cart" className="ml-2 sm:ml-5" count={cartCount}>
-            <ShoppingCart size={22} className="sm:hidden" />
-            <ShoppingCart size={24} className="hidden sm:block" />
+          <NavIconLink href="/cart" label="Cart" className="hidden sm:ml-5 sm:flex" count={cartCount}>
+            <ShoppingCart size={24} />
           </NavIconLink>
           <NavIconLink href="/account" label="Account">
             <User size={22} className="sm:hidden" />
