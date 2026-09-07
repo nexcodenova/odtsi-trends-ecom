@@ -357,8 +357,9 @@ export function Navbar({ categories }: { categories: Category[] }) {
             <ShoppingCart size={22} className="sm:hidden" />
             <ShoppingCart size={24} className="hidden sm:block" />
           </NavIconLink>
-          <NavIconLink href="/account" label="Account" className="hidden sm:flex">
-            <User size={24} />
+          <NavIconLink href="/account" label="Account">
+            <User size={22} className="sm:hidden" />
+            <User size={24} className="hidden sm:block" />
           </NavIconLink>
         </div>
       </div>
@@ -377,7 +378,13 @@ export function Navbar({ categories }: { categories: Category[] }) {
         }`}
       >
         <div className="flex items-center gap-6 overflow-x-auto bg-[#F6F5F3] px-4 py-3 [scrollbar-width:none] sm:px-[20px] sm:py-3.5 [&::-webkit-scrollbar]:hidden">
-            <CategoriesDropdown categories={categories} />
+            {/* Mobile's own Categories tab lives in the bottom bar now — this
+                dropdown would just be the same real categories a second time
+                on the same screen. Kept for tablet/desktop, which have no
+                bottom bar. */}
+            <div className="hidden sm:block">
+              <CategoriesDropdown categories={categories} />
+            </div>
 
             <div className="flex flex-1 items-center justify-between gap-6">
               {QUICK_LINKS.map(({ label, href, icon: Icon }) => (

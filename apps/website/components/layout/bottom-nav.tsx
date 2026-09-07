@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Home, Grid3x3, Heart, ShoppingCart, User, X } from "lucide-react";
+import { Home, Grid3x3, Heart, ShoppingCart, Wallet, X } from "lucide-react";
 import type { Category } from "@odtsi/exiuscart-client";
 import { useCart } from "@/hooks/use-cart";
 import { useWishlist } from "@/hooks/use-wishlist";
@@ -148,8 +148,8 @@ export function BottomNav({ categories }: { categories: Category[] }) {
           <ShoppingCart size={22} />
         </TabLink>
 
-        <TabLink href="/account" label="Account" active={pathname === "/account"}>
-          <User size={22} />
+        <TabLink href="/wallet" label="Wallet" active={pathname === "/wallet"}>
+          <Wallet size={22} />
         </TabLink>
       </nav>
 
