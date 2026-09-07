@@ -9,6 +9,7 @@ import { Home, Grid3x3, Heart, ShoppingCart, Wallet, X } from "lucide-react";
 import type { Category } from "@odtsi/exiuscart-client";
 import { useCart } from "@/hooks/use-cart";
 import { useWishlist } from "@/hooks/use-wishlist";
+import { CountBadge } from "@/components/shared/count-badge";
 
 // The one thing that actually changes how the site feels to use on a
 // phone: a fixed thumb-reach bar, present on every page, not just at
@@ -37,11 +38,10 @@ function TabLink({
     >
       <span className="relative">
         {children}
-        {!!count && count > 0 && (
-          <span className="absolute -right-2 -top-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-action px-1 text-[9px] font-extrabold leading-none text-action-ink">
-            {count > 99 ? "99+" : count}
-          </span>
-        )}
+        <CountBadge
+          count={count}
+          className="absolute -right-2 -top-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-action px-1 text-[9px] font-extrabold leading-none text-action-ink"
+        />
       </span>
       <span className={`text-[10px] leading-none ${active ? "font-extrabold" : "font-semibold"}`}>{label}</span>
     </Link>

@@ -35,3 +35,25 @@ body {
 .animate-spin-slow {
   animation: spin-slow 7s linear infinite;
 }
+
+/* One-shot pop, not a loop like float/spin — fires once when a real
+   badge count (cart/wishlist) goes up, so adding an item actually feels
+   like something happened instead of the number just silently changing. */
+@keyframes badge-pop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.35);
+  }
+  65% {
+    transform: scale(0.92);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-badge-pop {
+  animation: badge-pop 0.4s ease-out;
+}

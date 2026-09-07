@@ -9,6 +9,7 @@ import type { Category } from "@odtsi/exiuscart-client";
 import { useCart } from "@/hooks/use-cart";
 import { useWishlist } from "@/hooks/use-wishlist";
 import { SearchBar } from "@/components/layout/search-bar";
+import { CountBadge } from "@/components/shared/count-badge";
 
 const QUICK_LINKS = [
   { label: "Trending Now", href: "/collection/trending", icon: Flame },
@@ -65,11 +66,10 @@ function NavIconLink({
     >
       <span className="relative">
         {children}
-        {!!count && count > 0 && (
-          <span className="absolute -right-2 -top-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-action px-1 text-[10px] font-extrabold leading-none text-action-ink">
-            {count > 99 ? "99+" : count}
-          </span>
-        )}
+        <CountBadge
+          count={count}
+          className="absolute -right-2 -top-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-action px-1 text-[10px] font-extrabold leading-none text-action-ink"
+        />
       </span>
       <span className="text-xs font-semibold leading-none">{label}</span>
     </Link>
@@ -237,11 +237,10 @@ function MobileMenu({
           >
             <Heart size={20} className="text-primary" />
             Wishlist
-            {wishlistCount > 0 && (
-              <span className="ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-action px-1 text-[11px] font-extrabold text-action-ink">
-                {wishlistCount > 99 ? "99+" : wishlistCount}
-              </span>
-            )}
+            <CountBadge
+              count={wishlistCount}
+              className="ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-action px-1 text-[11px] font-extrabold text-action-ink"
+            />
           </Link>
           <Link
             href="/account"
