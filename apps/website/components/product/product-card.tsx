@@ -206,21 +206,24 @@ export function ProductCard({ product, compact, sale }: ProductCardProps) {
           </div>
         )}
 
-        {!compact && !sale && product.viewCount !== null && (
-          <div className="mt-1 flex items-center gap-1.5 text-xs text-[#8B8880]">
-            <Eye size={13} />
-            {product.viewCount.toLocaleString()} views
+        {!compact && !sale && (product.viewCount !== null || !isAffiliate) && (
+          <div className="mt-1 flex items-center gap-2.5 text-xs text-[#8B8880]">
+            {product.viewCount !== null && (
+              <span className="flex items-center gap-1.5">
+                <Eye size={13} />
+                {product.viewCount.toLocaleString()} views
+              </span>
+            )}
+            {!isAffiliate && (
+              <span className={`text-sm font-bold ${product.inStock ? "text-status" : "text-[#B9412E]"}`}>
+                {!product.inStock
+                  ? "Out of Stock"
+                  : product.stockCount !== null && product.stockCount <= 10
+                    ? "Limited Stock"
+                    : "In Stock"}
+              </span>
+            )}
           </div>
-        )}
-
-        {!isAffiliate && !compact && !sale && (
-          <p className={`mt-1 text-sm font-bold ${product.inStock ? "text-status" : "text-[#B9412E]"}`}>
-            {!product.inStock
-              ? "Out of Stock"
-              : product.stockCount !== null && product.stockCount <= 10
-                ? "Limited Stock"
-                : "In Stock"}
-          </p>
         )}
 
         <div className="mt-2 flex flex-wrap items-baseline gap-2">
