@@ -9,9 +9,12 @@ import { WALLET_CASHBACK_LABEL } from "@/lib/wallet-rate";
 async function loadWallet(token: string): Promise<Wallet | null> {
   try {
     return await getWallet(token);
-  } catch {
-    // ExiusCart's /wallet endpoint isn't live yet — honest state, not a
-    // fake balance.
+  } catch (err) {
+    // Real endpoint, confirmed live and working this session — a failure
+    // here now means an actual transient problem (expired token, network),
+    // not "not built yet". Logged server-side so a real outage is
+    // diagnosable instead of silently looking identical to "not live".
+    console.error("Failed to load wallet:", err);
     return null;
   }
 }
@@ -78,7 +81,7 @@ export default async function WalletPage() {
         </p>
         {!wallet && (
           <p className="mt-2 text-xs text-[#8B8880]">
-            You&apos;re signed in — ExiusCart&apos;s wallet balance endpoint isn&apos;t live yet.
+            Couldn&apos;t load your balance right now — try refreshing in a moment.
           </p>
         )}
       </div>
@@ -87,11 +90,11 @@ export default async function WalletPage() {
         <div className="mt-6 w-full text-left">
           <p className="text-xs font-bold uppercase tracking-wide text-[#8B8880]">Recent Activity</p>
           <div className="mt-3 flex flex-col gap-2">
-            {wallet.transactions.map((t) => (
-              <div key={t.id} className="flex items-center justify-between rounded-xl border border-black/10 px-4 py-3">
+            {wallet.transactions.map((t, i) => (
+              <div key={i} className="flex items-center justify-between rounded-xl border border-black/10 px-4 py-3">
                 <div>
                   <p className="text-sm font-semibold text-[#16161A]">{t.description}</p>
-                  <p className="text-xs text-[#8B8880]">{new Date(t.createdAt).toLocaleDateString()}</p>
+                  {t.createdAt && <p className="text-xs text-[#8B8880]">{new Date(t.createdAt).toLocaleDateString()}</p>}
                 </div>
                 <p className={`text-sm font-bold ${t.type === "credit" ? "text-status" : "text-[#B9412E]"}`}>
                   {t.type === "credit" ? "+" : "-"}
