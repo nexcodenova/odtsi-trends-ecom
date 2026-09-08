@@ -45,7 +45,7 @@ export async function MostViewed() {
       </div>
 
       <div className="mt-8">
-        <ProductCarousel products={products} sale />
+        <ProductCarousel products={products} discountBadge />
       </div>
 
       <div className="mt-6 flex justify-center">

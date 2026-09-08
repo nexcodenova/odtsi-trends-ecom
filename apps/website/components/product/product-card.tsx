@@ -19,9 +19,15 @@ interface ProductCardProps {
   // without the button dominating each card.
   compact?: boolean;
   // Bordered card + a red corner-flag discount badge instead of the
-  // usual gold pill — used on the On Sale page to read as a deals
-  // listing. Add to Cart stays the exact same button either way.
+  // usual gold pill, AND drops the rating count/views/stock rows down to
+  // just stars — the shorter "deals listing" card, used only on the On
+  // Sale page.
   sale?: boolean;
+  // Same red corner-flag badge as `sale`, same bordered card so it sits
+  // at the true corner — but nothing else changes: rating count, views,
+  // stock all stay exactly as the default card shows them. Used on Most
+  // Viewed, where the ask was specifically "just the badge, nothing more."
+  discountBadge?: boolean;
 }
 
 // Best real multi-buy saving on this product, if any tier is actually
@@ -37,7 +43,10 @@ function bestTierDeal(product: Product, price: number): { tier: QuantityTier; sa
   return best;
 }
 
-export function ProductCard({ product, compact, sale }: ProductCardProps) {
+export function ProductCard({ product, compact, sale, discountBadge }: ProductCardProps) {
+  // Both flags use the same bordered-card + corner-badge mechanics — only
+  // `sale` additionally shortens the card by hiding rating count/views/stock.
+  const badge = sale || discountBadge;
   const [justAdded, setJustAdded] = useState(false);
   // Starts false on the server (no localStorage there) and syncs on mount.
   const [saved, setSaved] = useState(false);
@@ -111,16 +120,16 @@ export function ProductCard({ product, compact, sale }: ProductCardProps) {
     <div className="flex h-full flex-col rounded-2xl p-3">
       <Link
         href={`/product/${product.slug}`}
-        className={`group relative block ${sale ? "rounded-xl border border-black/10 bg-white p-2.5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]" : ""}`}
+        className={`group relative block ${badge ? "rounded-xl border border-black/10 bg-white p-2.5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]" : ""}`}
       >
-        {/* Sale variant: a red corner flag sitting right at the card's own
-            outer corner (pulled out by the card's padding with negative
-            inset, not the image's corner) instead of the usual gold pill
-            next to the price — reads as "this is a deals listing" at a
-            glance. Same real discount number either way. animate-float is
-            the same gentle drift already used elsewhere to draw the eye to
-            a real discount, not a new effect just for this. */}
-        {sale && hasDiscount && (
+        {/* A red corner flag sitting right at the card's own outer corner
+            (pulled out by the card's padding with negative inset, not the
+            image's corner) instead of the usual gold pill next to the
+            price — reads as "this is a deal" at a glance. Same real
+            discount number either way. animate-float is the same gentle
+            drift already used elsewhere to draw the eye to a real
+            discount, not a new effect just for this. */}
+        {badge && hasDiscount && (
           <span className="animate-float absolute -left-2.5 -top-2.5 z-10 rounded-br-xl rounded-tl-xl bg-[#E0342A] py-1.5 pl-2.5 pr-3 text-xs font-extrabold text-white shadow-[0_4px_10px_-4px_rgba(224,52,42,0.6)]">
             -{discountPct}% OFF
           </span>
@@ -231,7 +240,7 @@ export function ProductCard({ product, compact, sale }: ProductCardProps) {
             <Price amount={product.compareAtPrice!} currency={product.currency} className="text-sm text-[#a3a19c] line-through" />
           )}
           <Price amount={price} currency={product.currency} className="text-xl font-extrabold text-primary" />
-          {hasDiscount && !sale && (
+          {hasDiscount && !badge && (
             <span className="rounded-full bg-action px-2.5 py-1 text-xs font-extrabold text-action-ink">
               -{discountPct}%
             </span>

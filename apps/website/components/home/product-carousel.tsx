@@ -8,15 +8,17 @@ export function ProductCarousel({
   products,
   compact,
   sale,
+  discountBadge,
 }: {
   products: Product[];
   compact?: boolean;
   sale?: boolean;
+  discountBadge?: boolean;
 }) {
   return (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-6">
       {products.map((product) => (
-        <ProductCard key={product.id} product={product} compact={compact} sale={sale} />
+        <ProductCard key={product.id} product={product} compact={compact} sale={sale} discountBadge={discountBadge} />
       ))}
     </div>
   );
