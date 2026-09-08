@@ -2,6 +2,8 @@
 // only in the browser — there's no fraud risk (worst case it resets), and
 // this is how guest carts work on most real e-commerce sites.
 
+import { trackAddToCart } from "@/lib/tracking";
+
 export interface CartItem {
   productId: string;
   slug: string;
@@ -57,6 +59,10 @@ export function addToCart(item: Omit<CartItem, "quantity">, quantity = 1) {
     cart.push({ ...item, quantity });
   }
   saveCart(cart);
+  // Single real chokepoint for every add-to-cart on the site (product
+  // cards, product page, pack tiers) — one call site instead of every
+  // button re-firing the retargeting event itself.
+  trackAddToCart({ id: item.productId, name: item.name, price: item.price, currency: item.currency, quantity });
 }
 
 export function updateQuantity(productId: string, quantity: number, variantId?: string) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useCart } from "@/hooks/use-cart";
 import { formatCurrency } from "@odtsi/utils";
@@ -8,6 +8,7 @@ import { createCheckout } from "@odtsi/exiuscart-client";
 import { saveOrderRecord } from "@/lib/order-history";
 import { getBuyNowItem, clearBuyNowItem } from "@/lib/buy-now";
 import { cartSubtotal, type CartItem } from "@/lib/cart";
+import { trackInitiateCheckout, trackPurchase } from "@/lib/tracking";
 
 export function CheckoutContent() {
   const { items: cartItems, subtotal: cartSubtotalAmount } = useCart();
@@ -26,6 +27,21 @@ export function CheckoutContent() {
   const price = (amount: number) => formatCurrency(amount, subtotalCurrency);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
+
+  // Fires once, the first real moment checkout actually has real items to
+  // show (not on the buyNowItem===undefined loading frame, not again on
+  // every re-render while typing into the form).
+  const hasFiredInitiateCheckout = useRef(false);
+  useEffect(() => {
+    if (buyNowItem === undefined || items.length === 0 || hasFiredInitiateCheckout.current) return;
+    hasFiredInitiateCheckout.current = true;
+    trackInitiateCheckout(
+      items.map((i) => ({ id: i.productId, name: i.name, price: i.price, quantity: i.quantity })),
+      subtotal,
+      subtotalCurrency,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [buyNowItem, items.length]);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -54,6 +70,10 @@ export function CheckoutContent() {
       // Remembered locally so Order History on the account page can look
       // this up for real — ExiusCart has no account-wide order list yet.
       saveOrderRecord({ orderNumber: order.orderNumber, email });
+      // The real order total ExiusCart just confirmed, not the pre-submit
+      // client-side subtotal — matches what actually got recorded even if
+      // a wallet discount or similar adjusted it server-side.
+      trackPurchase(order.orderNumber, order.total, order.currency);
       clearBuyNowItem();
       // TODO: once this succeeds for real, clear the cart and redirect to
       // /order/{orderNumber} using the returned order + take clientSecret

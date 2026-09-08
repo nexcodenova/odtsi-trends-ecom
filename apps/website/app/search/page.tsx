@@ -1,5 +1,6 @@
 import { getProducts, type Product } from "@odtsi/exiuscart-client";
 import { ProductCarousel } from "@/components/home/product-carousel";
+import { SearchTracker } from "@/components/shared/search-tracker";
 import { SearchX } from "lucide-react";
 
 async function loadResults(q: string): Promise<Product[]> {
@@ -17,6 +18,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-5">
+      <SearchTracker query={query} />
       <h1 className="text-2xl font-extrabold text-[#16161A] sm:text-3xl">
         {query ? (
           <>

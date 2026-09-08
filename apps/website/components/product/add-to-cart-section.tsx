@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Minus, Plus, Check, ExternalLink, CheckCircle2, ShoppingCart } from "lucide-react";
 import type { Product, ProductVariant } from "@odtsi/exiuscart-client";
@@ -12,6 +12,7 @@ import { Price } from "@/components/shared/price";
 import { cheapestVariant } from "@/lib/product-price";
 import { getSpecIcon } from "@/lib/spec-icons";
 import { WALLET_CASHBACK_LABEL } from "@/lib/wallet-rate";
+import { trackViewContent } from "@/lib/tracking";
 
 // Price, stock, color/size picker, quantity, and Add to Cart all live here
 // together — once a variant is selected, the price and stock shown above
@@ -75,6 +76,15 @@ export function AddToCartSection({ product }: { product: Product }) {
   const maxQuantity = selectedVariant ? selectedVariant.stockCount : product.stockCount;
   const hasDiscount = product.compareAtPrice !== null && product.compareAtPrice > currentPrice;
   const savings = hasDiscount ? product.compareAtPrice! - currentPrice : 0;
+
+  // Fires once per real product-page view — this component only mounts on
+  // an actual product page with real product data, no separate "is this a
+  // real view" check needed. Only on product identity, not on every
+  // variant reselect — a color/size swap isn't a new "view" of the product.
+  useEffect(() => {
+    trackViewContent({ id: product.id, name: product.name, price: currentPrice, currency: product.currency });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product.id]);
 
   function currentLineItem() {
     const variantLabel = selectedVariant
