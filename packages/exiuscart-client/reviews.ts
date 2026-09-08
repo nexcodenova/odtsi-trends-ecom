@@ -1,20 +1,31 @@
 import { storeUrl } from "./config";
 import type { ProductReview } from "./types";
 
-// Not live on ExiusCart yet (confirmed via direct testing — real 404s, not
-// an assumption) — callers must catch and show an honest empty/error state,
-// same as checkout and customer accounts before those went live.
-
+// GET is live and real (confirmed via a genuine review showing up on a
+// real product) — the public read endpoint's field is `submitted_at`, NOT
+// `created_at` (that was the wrong field name, confirmed against
+// ExiusCart's own _approved_reviews_out response shape directly — the
+// mismatch is exactly why every real review's date rendered as "Invalid
+// Date": raw.created_at was always undefined). photo_url is real too, just
+// never mapped through before now.
 interface RawReview {
   id: number;
   customer_name: string;
   rating: number;
   comment: string;
-  created_at: string;
+  submitted_at: string | null;
+  photo_url: string | null;
 }
 
 function mapReview(raw: RawReview): ProductReview {
-  return { id: String(raw.id), customerName: raw.customer_name, rating: raw.rating, comment: raw.comment, createdAt: raw.created_at };
+  return {
+    id: String(raw.id),
+    customerName: raw.customer_name,
+    rating: raw.rating,
+    comment: raw.comment,
+    createdAt: raw.submitted_at,
+    photoUrl: raw.photo_url,
+  };
 }
 
 export async function getReviews(slug: string): Promise<ProductReview[]> {

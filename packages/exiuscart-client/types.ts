@@ -54,7 +54,11 @@ export interface ProductReview {
   customerName: string;
   rating: number;
   comment: string;
-  createdAt: string;
+  createdAt: string | null;
+  // Real photo a reviewer attached — ExiusCart's own review widget calls
+  // this "Review photo" (proof-of-purchase style), separate from the
+  // product's own images. Null means this review has none, not an error.
+  photoUrl: string | null;
 }
 
 export interface ProductTestimonial {

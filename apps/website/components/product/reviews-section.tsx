@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { Star, Gift, PenLine } from "lucide-react";
 import type { ProductReview } from "@odtsi/exiuscart-client";
 
@@ -69,7 +70,17 @@ export function ReviewsSection({ slug, reviews, isLoggedIn }: Props) {
                 </span>
               </div>
               <p className="mt-2 text-sm leading-relaxed text-[#4A4844]">{r.comment}</p>
-              <p className="mt-2 text-xs text-[#8B8880]">{new Date(r.createdAt).toLocaleDateString()}</p>
+              {/* Real photo the reviewer attached, when there is one — not
+                  every review has one, honest-empty rather than a broken
+                  image placeholder. */}
+              {r.photoUrl && (
+                <div className="relative mt-2 h-24 w-24 overflow-hidden rounded-lg">
+                  <Image src={r.photoUrl} alt="Photo from the review" fill className="object-cover" />
+                </div>
+              )}
+              {r.createdAt && (
+                <p className="mt-2 text-xs text-[#8B8880]">{new Date(r.createdAt).toLocaleDateString()}</p>
+              )}
             </div>
           ))}
         </div>
