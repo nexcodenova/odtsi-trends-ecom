@@ -199,11 +199,11 @@ export function Navbar({ categories }: { categories: Category[] }) {
           <SearchBar />
         </div>
 
-        {/* Wallet/Wishlist/Cart/Need to Talk — desktop/tablet only now. On
-            mobile the bottom bar already covers all four of these, so
-            keeping them here too would just be the same real counts shown
-            twice on the same screen. Account stays visible on mobile since
-            it's the one destination the bottom bar doesn't carry. */}
+        {/* Wallet/Wishlist/Cart — desktop/tablet only now. On mobile the
+            bottom bar already covers all three, so keeping them here too
+            would just be the same real counts shown twice on the same
+            screen. Account and Need to Talk stay visible on mobile since
+            those are the two destinations the bottom bar doesn't carry. */}
         <div className="ml-auto mr-2 flex items-center gap-5 sm:mr-5 sm:gap-7">
           <NavIconLink href="/wallet" label="Wallet" className="hidden sm:flex">
             <Wallet size={24} />
@@ -212,7 +212,9 @@ export function Navbar({ categories }: { categories: Category[] }) {
             <Heart size={24} />
           </NavIconLink>
           {/* Deliberately not the small stacked icon+caption style the rest
-              of this row uses — bigger text, icon beside it, stands out. */}
+              of this row uses — bigger text, icon beside it, stands out.
+              Desktop/tablet only; mobile gets the same stacked icon style
+              as Account right below, right next to it. */}
           <Link
             href="/contact"
             className="hidden items-center gap-1.5 text-white/90 transition-colors hover:text-white sm:flex"
@@ -222,6 +224,9 @@ export function Navbar({ categories }: { categories: Category[] }) {
           </Link>
           <NavIconLink href="/cart" label="Cart" className="hidden sm:ml-5 sm:flex" count={cartCount}>
             <ShoppingCart size={24} />
+          </NavIconLink>
+          <NavIconLink href="/contact" label="Need to Talk" className="sm:hidden">
+            <Brain size={22} className="animate-pulse" />
           </NavIconLink>
           <NavIconLink href="/account" label="Account">
             <User size={22} className="sm:hidden" />
