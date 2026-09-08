@@ -29,9 +29,9 @@ export default function TermsPage() {
           processed, with no physical shipment.
         </li>
         <li>
-          <strong>Affiliate products</strong> — listed on the Site for discovery, but purchased directly through a
-          third-party seller&rsquo;s own site via an external link. ODTSI does not process payment, fulfil, or take
-          responsibility for these orders — the third-party seller&rsquo;s own terms and policies apply instead.
+          <strong>ODTSI Picks (affiliate products)</strong> — listed on the Site for discovery, but purchased directly
+          through a third-party seller&rsquo;s own site via an external link. ODTSI does not process payment, fulfil,
+          or take responsibility for these orders — the third-party seller&rsquo;s own terms and policies apply instead.
         </li>
       </ul>
 

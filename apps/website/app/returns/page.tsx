@@ -62,9 +62,9 @@ export default function ReturnsPage() {
         </li>
       </ul>
 
-      <h2>4. Affiliate products</h2>
+      <h2>4. ODTSI Picks (affiliate products)</h2>
       <p>
-        Affiliate products are purchased directly on a third-party seller&rsquo;s own site, not through ODTSI.
+        ODTSI Picks are purchased directly on a third-party seller&rsquo;s own site, not through ODTSI.
         Delivery, returns, and refunds for those orders are handled entirely by that third-party seller, under
         their own policy — this page doesn&rsquo;t apply to them.
       </p>

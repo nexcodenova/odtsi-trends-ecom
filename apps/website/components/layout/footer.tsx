@@ -35,8 +35,9 @@ export function Footer() {
       <div className="mx-auto grid max-w-6xl grid-cols-2 gap-10 px-5 py-12 sm:grid-cols-4">
         <div>
           <span className="text-lg font-extrabold text-primary">ODTSI</span>
-          <p className="mt-3 max-w-[22ch] text-xs text-[#716D67]">
-            Trending finds, delivered fast to the UK, US, EU, Australia and Canada.
+          <p className="mt-3 max-w-[26ch] text-xs text-[#716D67]">
+            Trending physical products, real digital downloads, and honest picks we don&rsquo;t sell ourselves — all
+            in one place.
           </p>
         </div>
 
