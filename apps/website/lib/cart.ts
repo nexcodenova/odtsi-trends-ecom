@@ -3,6 +3,7 @@
 // this is how guest carts work on most real e-commerce sites.
 
 import { trackAddToCart } from "@/lib/tracking";
+import { trackStorefrontEvent } from "@odtsi/exiuscart-client";
 
 export interface CartItem {
   productId: string;
@@ -63,6 +64,9 @@ export function addToCart(item: Omit<CartItem, "quantity">, quantity = 1) {
   // cards, product page, pack tiers) — one call site instead of every
   // button re-firing the retargeting event itself.
   trackAddToCart({ id: item.productId, name: item.name, price: item.price, currency: item.currency, quantity });
+  // Real ExiusCart on-site analytics (separate from the retargeting call
+  // above) — feeds the seller dashboard's Website Traffic / product funnel.
+  trackStorefrontEvent({ event: "add_to_cart", productId: item.productId });
 }
 
 export function updateQuantity(productId: string, quantity: number, variantId?: string) {

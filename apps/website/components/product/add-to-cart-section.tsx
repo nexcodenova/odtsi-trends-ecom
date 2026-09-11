@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Minus, Plus, Check, ExternalLink, CheckCircle2, ShoppingCart } from "lucide-react";
-import type { Product, ProductVariant } from "@odtsi/exiuscart-client";
+import { trackStorefrontEvent, type Product, type ProductVariant } from "@odtsi/exiuscart-client";
 import { addToCart } from "@/lib/cart";
 import { setBuyNowItem } from "@/lib/buy-now";
 import { notifyAdded, notifyVariantImage } from "@/lib/notify";
@@ -83,6 +83,11 @@ export function AddToCartSection({ product }: { product: Product }) {
   // variant reselect — a color/size swap isn't a new "view" of the product.
   useEffect(() => {
     trackViewContent({ id: product.id, name: product.name, price: currentPrice, currency: product.currency });
+    // Real ExiusCart on-site analytics (separate from the retargeting call
+    // above) — this is the only thing that fills the seller dashboard's
+    // Website Traffic chart and per-product funnel; it was real but
+    // undocumented until now, not unbuilt.
+    trackStorefrontEvent({ event: "view", productId: product.id });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product.id]);
 

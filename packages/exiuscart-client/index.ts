@@ -5,4 +5,5 @@ export { createCheckout, lookupOrder } from "./orders";
 export { signUp, signIn, type AuthResult } from "./auth";
 export { getWallet, type Wallet, type WalletTransaction } from "./wallet";
 export { getReviews, submitReview } from "./reviews";
+export { trackStorefrontEvent } from "./insights";
 export { EXIUSCART_BASE_URL, SHOP_SLUG } from "./config";
