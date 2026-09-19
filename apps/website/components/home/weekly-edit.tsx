@@ -16,13 +16,15 @@ interface EditTile {
 
 // Same 5 real category tiles as before — Kids goes first so it lands in
 // the large featured cell, same prominence it already had as the portrait
-// image in the old masonry layout.
+// image in the old masonry layout. Image files are named generically
+// (image1.png...image5.png) rather than by category — the visible label
+// below is what customers actually see; the file name is just internal.
 const TILES: EditTile[] = [
-  { label: "Kids", href: "/category/baby-kids", imageUrl: "/weekly-edit/kids.png" },
-  { label: "Smart Gadgets", href: "/category/smart-gadgets", imageUrl: "/weekly-edit/smart-gadgets.png" },
-  { label: "Daily Life", href: "/category/home-kitchen", imageUrl: "/weekly-edit/daily-life.png" },
-  { label: "Beauty", href: "/category/beauty-tools", imageUrl: "/weekly-edit/beauty.png" },
-  { label: "Travel", href: "/category/travel", imageUrl: "/weekly-edit/travel.png" },
+  { label: "Kids", href: "/category/baby-kids", imageUrl: "/weekly-edit/image1.png" },
+  { label: "Smart Gadgets", href: "/category/smart-gadgets", imageUrl: "/weekly-edit/image2.png" },
+  { label: "Daily Life", href: "/category/home-kitchen", imageUrl: "/weekly-edit/image3.png" },
+  { label: "Beauty", href: "/category/beauty-tools", imageUrl: "/weekly-edit/image4.png" },
+  { label: "Travel", href: "/category/travel", imageUrl: "/weekly-edit/image5.png" },
 ];
 
 // The zoom button is a real, separate control from the tile's own Link —
