@@ -14,13 +14,13 @@ interface CategoryGridProps {
 // the pagination math can never drift apart like they did before (columns
 // were set in Tailwind classes while row-slicing assumed a different count).
 const BREAKPOINTS = [
-  { minWidth: 768, columns: 10, rows: 2 }, // md and up
-  { minWidth: 640, columns: 8, rows: 2 }, // sm
+  { minWidth: 768, columns: 10, rows: 1 }, // md and up — one real row, rest behind the arrow
+  { minWidth: 640, columns: 8, rows: 1 }, // sm
 ];
 // Always matches (minWidth 0) — the guaranteed fallback below 640px, kept
 // separate from BREAKPOINTS so its type isn't "possibly undefined" like an
 // array-index fallback would be.
-const MOBILE_GRID = { minWidth: 0, columns: 4, rows: 3 };
+const MOBILE_GRID = { minWidth: 0, columns: 4, rows: 2 };
 
 function getGridConfig(width: number) {
   return BREAKPOINTS.find((bp) => width >= bp.minWidth) ?? MOBILE_GRID;
