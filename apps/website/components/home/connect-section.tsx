@@ -29,7 +29,7 @@ export function ConnectSection() {
   }
 
   return (
-    <section className="mx-auto max-w-7xl px-4 py-10 sm:px-5 sm:py-14">
+    <section className="mx-auto max-w-[1400px] px-4 py-10 sm:px-5 sm:py-14">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="rounded-3xl bg-[#F6F5F3] px-6 py-10 text-center sm:px-10">
           <p className="text-xs font-bold uppercase tracking-wide text-[#16161A]">Exclusive Discounts</p>

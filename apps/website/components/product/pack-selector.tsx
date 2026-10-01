@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Space_Grotesk } from "next/font/google";
+import localFont from "next/font/local";
 import { Check, Minus, Plus } from "lucide-react";
 import type { Product } from "@odtsi/exiuscart-client";
 import { addToCart } from "@/lib/cart";
@@ -12,7 +12,10 @@ import { WALLET_CASHBACK_LABEL } from "@/lib/wallet-rate";
 // A distinct display face for the pricing/titles here, separate from the
 // site's body font (Plus Jakarta Sans) — geometric and punchy, so the
 // numbers actually stand out instead of blending into the page.
-const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["600", "700"] });
+// Self-hosted the same way layout.tsx's font is — next/font/google failed
+// a real build (twice, independently, for two different fonts) by trying
+// to fetch from Google at build time and getting a null/failed response.
+const spaceGrotesk = localFont({ src: "../../app/fonts/space-grotesk.woff2", weight: "600 700", display: "swap" });
 
 // One consistent premium gold treatment for every badge, regardless of type.
 const BADGE_STYLE = "bg-action text-action-ink";

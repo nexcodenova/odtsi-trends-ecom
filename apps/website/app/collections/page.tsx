@@ -15,7 +15,7 @@ export default async function CollectionsPage() {
   const products = await loadProducts();
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-5">
+    <div className="mx-auto max-w-[1400px] px-4 py-8 sm:px-5">
       <h1 className="text-2xl font-extrabold text-[#16161A] sm:text-3xl">Collection</h1>
 
       {products.length > 0 ? (

@@ -21,7 +21,7 @@ const PILLARS = [
 export function WhyOdtsi() {
   return (
     <section className="bg-primary-light py-14 sm:py-20">
-    <div className="mx-auto max-w-7xl px-4 sm:px-5">
+    <div className="mx-auto max-w-[1400px] px-4 sm:px-5">
       <p className="text-center text-xs font-bold uppercase tracking-widest text-primary">Why ODTSI</p>
       <h2 className="mt-2 text-center text-2xl font-extrabold text-[#16161A] sm:text-3xl">
         The trust part, out of the way

@@ -71,7 +71,7 @@ export function WeeklyEdit() {
   const [big, ...rest] = TILES;
 
   return (
-    <section className="mx-auto max-w-7xl px-4 py-10 sm:px-5 sm:py-14">
+    <section className="mx-auto max-w-[1400px] px-4 py-10 sm:px-5 sm:py-14">
       <div className="flex items-end justify-between gap-4">
         <div>
           <Badge variant="action">Fresh Picks</Badge>

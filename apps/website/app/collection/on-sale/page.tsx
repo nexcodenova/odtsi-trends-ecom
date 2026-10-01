@@ -27,7 +27,7 @@ export default async function OnSalePage() {
   const maxDiscountPct = products.length > 0 ? Math.round(Math.max(...products.map(discountPct))) : 0;
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-5">
+    <div className="mx-auto max-w-[1400px] px-4 py-8 sm:px-5">
       <OnSaleHero maxDiscountPct={maxDiscountPct} dealCount={products.length} />
 
       <div id="deals" className="mt-10 scroll-mt-20">

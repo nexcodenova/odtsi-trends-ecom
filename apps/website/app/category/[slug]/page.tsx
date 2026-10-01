@@ -35,7 +35,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
   const products = await loadProducts(slug);
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-5">
+    <div className="mx-auto max-w-[1400px] px-4 py-8 sm:px-5">
       <nav className="text-xs text-[#8B8880]">
         <Link href="/" className="hover:text-primary">
           Home
