@@ -44,6 +44,7 @@ export function HeroCarousel({ slides, intervalMs = 3000 }: HeroCarouselProps) {
   }
 
   return (
+    <div className="mx-auto max-w-7xl">
     <section className="relative mx-4 mt-3 aspect-[3/2] overflow-hidden rounded-3xl sm:mx-5 sm:mt-4 sm:aspect-[4/1]">
       {slides.map((slide, i) => (
         <div
@@ -112,5 +113,6 @@ export function HeroCarousel({ slides, intervalMs = 3000 }: HeroCarouselProps) {
         </>
       )}
     </section>
+    </div>
   );
 }

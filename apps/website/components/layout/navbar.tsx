@@ -188,7 +188,7 @@ export function Navbar({ categories }: { categories: Category[] }) {
           All Categories grid it used to duplicate, and Need to Talk is one
           scroll away in the footer. Nothing it offered was actually unique
           to it any more. */}
-      <div className="flex items-center gap-4 bg-primary px-4 py-3 sm:gap-5 sm:px-[20px] sm:py-4">
+      <div className="mx-auto flex max-w-7xl items-center gap-4 bg-primary px-4 py-3 sm:gap-5 sm:px-[20px] sm:py-4">
         {/* Placeholder wordmark — swap for the real ODTSI logo once it's ready */}
         <Link href="/" className="text-xl font-extrabold tracking-tight text-white sm:text-2xl">
           ODTSI
@@ -248,7 +248,8 @@ export function Navbar({ categories }: { categories: Category[] }) {
           row2Visible ? "max-h-16 sm:max-h-[68px]" : "max-h-0"
         }`}
       >
-        <div className="flex items-center gap-6 overflow-x-auto bg-[#F6F5F3] px-4 py-3 [scrollbar-width:none] sm:px-[20px] sm:py-3.5 [&::-webkit-scrollbar]:hidden">
+        <div className="bg-[#F6F5F3]">
+          <div className="mx-auto flex max-w-7xl items-center gap-6 overflow-x-auto px-4 py-3 [scrollbar-width:none] sm:px-[20px] sm:py-3.5 [&::-webkit-scrollbar]:hidden">
             {/* Mobile's own Categories tab lives in the bottom bar now — this
                 dropdown would just be the same real categories a second time
                 on the same screen. Kept for tablet/desktop, which have no
@@ -270,6 +271,7 @@ export function Navbar({ categories }: { categories: Category[] }) {
                 </Link>
               ))}
             </div>
+          </div>
         </div>
       </div>
     </header>

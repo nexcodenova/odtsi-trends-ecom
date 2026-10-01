@@ -59,7 +59,7 @@ export function CategoryGrid({ categories: allCategories }: CategoryGridProps) {
   }
 
   return (
-    <section className="relative px-4 py-4 sm:px-5 sm:py-5">
+    <section className="relative mx-auto max-w-7xl px-4 py-4 sm:px-5 sm:py-5">
       <div
         className={`grid gap-x-3 gap-y-4 ${totalPages > 1 ? "sm:pr-14" : ""}`}
         style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gridTemplateRows: `repeat(${rows}, auto)` }}

@@ -21,7 +21,7 @@ export async function DigitalProducts() {
   if (products.length === 0) return null;
 
   return (
-    <section className="px-4 py-10 sm:px-5 sm:py-14">
+    <section className="mx-auto max-w-7xl px-4 py-10 sm:px-5 sm:py-14">
       <div className="flex items-center gap-4">
         <span className="h-px flex-1 bg-[#DEDCD5]" />
         <h2 className="shrink-0 text-3xl font-extrabold text-[#16161A] sm:text-4xl">Digi ODTSI</h2>
