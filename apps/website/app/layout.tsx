@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import localFont from "next/font/local";
 import { Navbar } from "@/components/layout/navbar";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { Footer } from "@/components/layout/footer";
@@ -9,10 +9,20 @@ import { getCategories, type Category } from "@odtsi/exiuscart-client";
 import { PLACEHOLDER_CATEGORIES } from "@/lib/placeholder-data";
 import "./globals.css";
 
-// Self-hosted via next/font — no runtime request to Google, no layout
-// shift. Applied on <body> so it's the site-wide default everywhere,
-// not just patched into one component.
-const plusJakarta = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"] });
+// The actual font file, downloaded once and committed to the repo
+// (app/fonts/plus-jakarta-sans.woff2 — the real Google-served variable
+// font, latin subset) instead of next/font/google fetching it live from
+// Google at BUILD time. That live fetch is what broke Vercel's build
+// (next/font/google's loader.js threw on a null response — a real
+// network failure reaching Google from the build machine, confirmed not
+// a code bug since the same build always succeeds locally). Self-hosting
+// the file removes that network dependency entirely, not just at
+// runtime (the old comment's claim) but at build time too.
+const plusJakarta = localFont({
+  src: "./fonts/plus-jakarta-sans.woff2",
+  weight: "400 800",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "ODTSI — Trending Finds, Delivered Fast",
