@@ -7,7 +7,7 @@ import { formatCurrency } from "@odtsi/utils";
 import { createCheckout } from "@odtsi/exiuscart-client";
 import { saveOrderRecord } from "@/lib/order-history";
 import { getBuyNowItem, clearBuyNowItem } from "@/lib/buy-now";
-import { cartSubtotal, type CartItem } from "@/lib/cart";
+import { cartSubtotal, clearCart, type CartItem } from "@/lib/cart";
 import { trackInitiateCheckout, trackPurchase } from "@/lib/tracking";
 
 export function CheckoutContent() {
@@ -52,7 +52,8 @@ export function CheckoutContent() {
     const email = String(form.get("email"));
 
     try {
-      const { order } = await createCheckout({
+      const origin = window.location.origin;
+      const result = await createCheckout({
         items: items.map((item) => ({ productId: item.productId, quantity: item.quantity })),
         customer: {
           name: String(form.get("name")),
@@ -60,27 +61,48 @@ export function CheckoutContent() {
           phone: String(form.get("phone")),
         },
         shippingAddress: {
-          line1: String(form.get("address1")),
-          line2: String(form.get("address2") ?? ""),
+          address: String(form.get("address1")),
+          address2: String(form.get("address2") ?? "") || undefined,
           city: String(form.get("city")),
-          postcode: String(form.get("postcode")),
+          zip: String(form.get("postcode")),
           country: String(form.get("country")),
         },
+        // Full absolute URLs — every real gateway (Stripe/Whop/PayPal)
+        // redirects the browser straight here after payment. We don't
+        // know the real order number yet (ExiusCart generates it as part
+        // of this same call), so it isn't in the URL — the return page
+        // reads the most recently saved order record instead.
+        returnUrl: `${origin}/checkout/return`,
+        cancelUrl: `${origin}/checkout/cancel`,
       });
-      // Remembered locally so Order History on the account page can look
+
+      // Remembered locally so Order History / the return page can look
       // this up for real — ExiusCart has no account-wide order list yet.
-      saveOrderRecord({ orderNumber: order.orderNumber, email });
+      saveOrderRecord({ orderNumber: result.orderNumber, email });
       // The real order total ExiusCart just confirmed, not the pre-submit
       // client-side subtotal — matches what actually got recorded even if
-      // a wallet discount or similar adjusted it server-side.
-      trackPurchase(order.orderNumber, order.total, order.currency);
+      // a wallet discount or similar adjusted it server-side. Currency
+      // isn't in ExiusCart's response (see types.ts) — subtotalCurrency
+      // is the real currency this cart was already priced in.
+      trackPurchase(result.orderNumber, result.total, subtotalCurrency);
       clearBuyNowItem();
-      // TODO: once this succeeds for real, clear the cart and redirect to
-      // /order/{orderNumber} using the returned order + take clientSecret
-      // to Stripe Elements to actually collect payment.
-    } catch {
-      // ExiusCart's /checkout endpoint isn't live yet — honest state.
-      setErrorMessage("Checkout isn't connected yet — orders can't be placed until that's live.");
+      // A real order now exists in ExiusCart for this cart's contents,
+      // regardless of whether payment completes — same as any real
+      // e-commerce checkout, the cart clears on submission, not on
+      // confirmed payment.
+      if (!buyNowItem) clearCart();
+
+      if (result.payment.redirectUrl) {
+        // Full navigation, not client-side routing — this is a real
+        // external domain (Whop/Stripe/PayPal's own hosted payment page).
+        window.location.href = result.payment.redirectUrl;
+        return;
+      }
+      // Shouldn't happen for a configured gateway — defensive only.
+      setErrorMessage("Order placed, but no payment page was returned. Contact support with your order number: " + result.orderNumber);
+      setStatus("error");
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : "Something went wrong — try again.");
       setStatus("error");
     }
   }

@@ -172,12 +172,44 @@ export interface CheckoutPayload {
     email: string;
     phone: string;
   };
+  // Real field names, confirmed against ExiusCart's own address_display()
+  // helper (2026-10-01) — it only recognizes these specific keys when
+  // rendering a human-readable address on the seller's dashboard/packing
+  // slip. The old line1/line2/postcode shape silently stored fine (the
+  // validator JSON-dumps any object) but displayed as a blank street line
+  // on their side, since none of those keys matched what it looks for.
   shippingAddress: {
-    line1: string;
-    line2?: string;
+    name?: string;
+    address: string;
+    address2?: string;
     city: string;
-    postcode: string;
+    province?: string;
+    zip: string;
     country: string;
+  };
+  // Required for every real gateway (Stripe/Whop/PayPal) — ExiusCart
+  // 422s without them. Full absolute URLs (the gateway's hosted page
+  // redirects the browser straight to these after payment).
+  returnUrl: string;
+  cancelUrl: string;
+}
+
+// What ExiusCart's real /checkout actually returns — confirmed directly
+// against its code (2026-10-01): a flat order_number/total, plus one
+// `payment` object whose shape is the same across every real gateway
+// (Stripe/Whop/PayPal all return {gateway, order_id, redirect_url} — only
+// PayHere, not currently wired to any real storefront checkout path,
+// would differ). This replaced an earlier guess ({order, clientSecret})
+// that never matched any real gateway's response.
+export interface CheckoutResult {
+  orderNumber: string;
+  total: number;
+  payment: {
+    gateway: string;
+    orderId: string;
+    // Send the shopper here to actually pay — present for every real
+    // gateway ExiusCart's storefront checkout currently supports.
+    redirectUrl?: string;
   };
 }
 
@@ -189,7 +221,12 @@ export interface Order {
   // cancelled. "paid" was wrong — the real value is "confirmed".
   status: "pending" | "confirmed" | "processing" | "shipped" | "delivered" | "cancelled";
   total: number;
-  currency: string;
+  // Confirmed (2026-10-01): neither /checkout nor /orders/{order_number}
+  // actually returns a currency field — this was always undefined in
+  // real responses, silently. Null here means "ExiusCart doesn't tell us
+  // this", not "no currency" — callers fall back to a known real currency
+  // from context (the cart/product the order came from) when displaying.
+  currency: string | null;
   // Real tracking fields ExiusCart added 2026-08-31 — null until the
   // seller marks the order shipped, not an error or "not supported".
   trackingNumber: string | null;

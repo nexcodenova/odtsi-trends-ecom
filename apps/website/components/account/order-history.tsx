@@ -60,7 +60,10 @@ export function OrderHistory() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-extrabold text-[#16161A]">{order.orderNumber}</p>
-                    <Price amount={order.total} currency={order.currency} className="text-sm text-[#716D67]" />
+                    {/* Same real gap as Track Order — ExiusCart never
+                        returns a currency on this endpoint; "USD" is a
+                        display fallback, not a real value. */}
+                    <Price amount={order.total} currency={order.currency ?? "USD"} className="text-sm text-[#716D67]" />
                   </div>
                   <span className={`rounded-full px-3 py-1 text-xs font-bold capitalize ${STATUS_STYLE[order.status]}`}>
                     {order.status}

@@ -1,14 +1,12 @@
 import { storeUrl } from "./config";
-import type { CheckoutPayload, Order } from "./types";
+import type { CheckoutPayload, CheckoutResult, Order } from "./types";
 
-// ExiusCart's real /checkout and /orders responses — snake_case, and the
-// order fields are flattened differently than what ODTSI's UI expects.
-// mapOrder() below is the one place that translates between the two.
+// ExiusCart's real /orders/{order_number} response — confirmed against
+// its code 2026-10-01. No currency field (see types.ts's note on Order.currency).
 interface RawOrder {
   order_number: string;
   status: Order["status"];
   total: number;
-  currency: string;
   tracking_number: string | null;
   carrier: string | null;
   shipped_at: string | null;
@@ -20,7 +18,7 @@ function mapOrder(raw: RawOrder): Order {
     orderNumber: raw.order_number,
     status: raw.status,
     total: raw.total,
-    currency: raw.currency,
+    currency: null,
     trackingNumber: raw.tracking_number ?? null,
     carrier: raw.carrier ?? null,
     shippedAt: raw.shipped_at ?? null,
@@ -28,20 +26,50 @@ function mapOrder(raw: RawOrder): Order {
   };
 }
 
-// Creates a pending order and a payment intent in one call.
-// clientSecret is safe to expose to the browser — it's designed for that.
-export async function createCheckout(payload: CheckoutPayload): Promise<{ order: Order; clientSecret: string }> {
-  // ExiusCart's real /checkout body isn't shaped like CheckoutPayload —
-  // confirmed via direct live testing 2026-08-31: items need product_id
-  // (snake_case, not productId), and name/email/phone are top-level fields,
-  // not nested under a `customer` object. shippingAddress is unchanged —
-  // that nested shape is what the API actually accepts.
+interface RawPayment {
+  gateway: string;
+  order_id: string;
+  redirect_url?: string | null;
+}
+
+// Real error message from ExiusCart when there is one — falls back to the
+// status code only if the body isn't the shape we expect (FastAPI's
+// HTTPException sometimes sends detail as a plain string, sometimes as a
+// {error, message} object — both show up across this codebase).
+async function extractErrorMessage(res: Response, fallback: string): Promise<string> {
+  try {
+    const body = await res.json();
+    if (typeof body?.detail === "string") return body.detail;
+    if (typeof body?.detail?.message === "string") return body.detail.message;
+    return fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+// Creates a real pending order and a real payment-session in one call.
+// returnUrl/cancelUrl are required — every real gateway ExiusCart's
+// storefront checkout supports (Stripe/Whop/PayPal) 422s without them.
+export async function createCheckout(payload: CheckoutPayload): Promise<CheckoutResult> {
   const body = {
-    items: payload.items.map((item) => ({ product_id: item.productId, quantity: item.quantity })),
+    items: payload.items.map((item) => ({ product_id: Number(item.productId), quantity: item.quantity })),
     name: payload.customer.name,
     email: payload.customer.email,
     phone: payload.customer.phone,
-    shippingAddress: payload.shippingAddress,
+    // A structured object is accepted (ExiusCart's own validator JSON-
+    // encodes it), but only these specific keys render correctly on the
+    // seller's side — see types.ts's note on CheckoutPayload.
+    shipping_address: {
+      name: payload.shippingAddress.name || payload.customer.name,
+      address: payload.shippingAddress.address,
+      address2: payload.shippingAddress.address2 || undefined,
+      city: payload.shippingAddress.city,
+      province: payload.shippingAddress.province || undefined,
+      zip: payload.shippingAddress.zip,
+      country: payload.shippingAddress.country,
+    },
+    return_url: payload.returnUrl,
+    cancel_url: payload.cancelUrl,
   };
 
   const res = await fetch(storeUrl("/checkout"), {
@@ -49,9 +77,18 @@ export async function createCheckout(payload: CheckoutPayload): Promise<{ order:
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error(`Checkout failed: ${res.status}`);
-  const raw: { order: RawOrder; clientSecret: string } = await res.json();
-  return { order: mapOrder(raw.order), clientSecret: raw.clientSecret };
+  if (!res.ok) throw new Error(await extractErrorMessage(res, `Checkout failed: ${res.status}`));
+
+  const raw: { order_number: string; total: number; payment: RawPayment } = await res.json();
+  return {
+    orderNumber: raw.order_number,
+    total: raw.total,
+    payment: {
+      gateway: raw.payment.gateway,
+      orderId: raw.payment.order_id,
+      redirectUrl: raw.payment.redirect_url ?? undefined,
+    },
+  };
 }
 
 // Guest order lookup — order number + email, no account needed.

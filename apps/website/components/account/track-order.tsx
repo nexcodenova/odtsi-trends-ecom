@@ -85,7 +85,10 @@ export function TrackOrder() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-extrabold text-[#16161A]">{order.orderNumber}</p>
-                <Price amount={order.total} currency={order.currency} className="text-sm text-[#716D67]" />
+                {/* ExiusCart's real order lookup never returns a currency —
+                    "USD" here is just a display fallback, same convention
+                    checkout already uses, not a real value from the order. */}
+                <Price amount={order.total} currency={order.currency ?? "USD"} className="text-sm text-[#716D67]" />
               </div>
               <span className={`rounded-full px-3 py-1 text-xs font-bold capitalize ${STATUS_STYLE[order.status]}`}>
                 {order.status}
