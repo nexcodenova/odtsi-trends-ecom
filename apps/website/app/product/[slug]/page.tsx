@@ -18,7 +18,7 @@ import { DigitalTrustStrip } from "@/components/product/digital-trust-strip";
 import { PhysicalTrustStrip } from "@/components/product/physical-trust-strip";
 import { DigitalProductTabs } from "@/components/product/digital-product-tabs";
 import { parseProductDescription } from "@/lib/parse-product-description";
-import { getSession } from "@/lib/session";
+import { getWalletCashbackLabel } from "@/lib/wallet-rate";
 import { displayPrice } from "@/lib/product-price";
 import { MIN_VIEWS_FOR_POPULAR } from "@/lib/product-thresholds";
 
@@ -64,7 +64,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   const { blocks: descriptionBlocks, images: descriptionImages } = product.description
     ? parseProductDescription(product.description)
     : { blocks: [], images: [] };
-  const [reviews, session] = await Promise.all([loadReviews(slug), getSession()]);
+  const [reviews, cashbackLabel] = await Promise.all([loadReviews(slug), getWalletCashbackLabel()]);
 
   return (
     <div className="mx-auto max-w-[1400px] px-4 py-8 sm:px-5 lg:px-8">
@@ -146,7 +146,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           {product.tagline && <p className="mt-1.5 text-[14px] text-[#8B8880]">{product.tagline}</p>}
 
           <div className={`mt-4 ${isDigital ? "flex flex-1 flex-col" : ""}`}>
-            <AddToCartSection product={product} />
+            <AddToCartSection product={product} cashbackLabel={cashbackLabel} />
           </div>
 
           {/* Seller's own note on shipping/handling time — physical only,
@@ -182,7 +182,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
       {hasTiers && (
         <div className="mt-10 border-t border-black/5 pt-8">
-          <PackSelector product={product} />
+          <PackSelector product={product} cashbackLabel={cashbackLabel} />
         </div>
       )}
 
@@ -200,13 +200,11 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         // Reviews behind tabs instead of one continuous scroll.
         <div className="mt-10 border-t border-black/5 pt-8">
           <DigitalProductTabs
-            slug={product.slug}
             description={product.description}
             descriptionBlocks={descriptionBlocks}
             descriptionImages={descriptionImages}
             faq={product.faq}
             reviews={reviews}
-            isLoggedIn={session !== null}
             tags={product.tags}
             specs={product.specs}
           />
@@ -223,7 +221,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           )}
 
           <div className={product.description ? "mt-10" : ""}>
-            <ReviewsSection slug={product.slug} reviews={reviews} isLoggedIn={session !== null} />
+            <ReviewsSection reviews={reviews} />
           </div>
 
           {/* Real seller-written Q&A only — section skips entirely when

@@ -13,13 +13,11 @@ interface DescriptionImage {
 }
 
 interface Props {
-  slug: string;
   description: string | null;
   descriptionBlocks: string[];
   descriptionImages: DescriptionImage[];
   faq: ProductFaq[];
   reviews: ProductReview[];
-  isLoggedIn: boolean;
   // Real seller-set tags — already coming back from ExiusCart on every
   // product, just never mapped or shown until now.
   tags: string[];
@@ -36,13 +34,11 @@ type TabId = "description" | "specifications" | "faq" | "reviews";
 // Digital-only tabbed layout, replacing the continuous-scroll section order
 // physical/affiliate pages use.
 export function DigitalProductTabs({
-  slug,
   description,
   descriptionBlocks,
   descriptionImages,
   faq,
   reviews,
-  isLoggedIn,
   tags,
   specs,
 }: Props) {
@@ -106,7 +102,7 @@ export function DigitalProductTabs({
           </div>
         )}
         {active === "faq" && <ProductFaqSection faq={faq} />}
-        {active === "reviews" && <ReviewsSection slug={slug} reviews={reviews} isLoggedIn={isLoggedIn} />}
+        {active === "reviews" && <ReviewsSection reviews={reviews} />}
       </div>
     </div>
   );

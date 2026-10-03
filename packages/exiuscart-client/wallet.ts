@@ -58,3 +58,19 @@ export async function getWallet(token: string): Promise<Wallet> {
   if (!res.ok) throw new Error(`Failed to load wallet: ${res.status}`);
   return mapWallet(await res.json());
 }
+
+export interface WalletSettings {
+  isEnabled: boolean;
+  cashbackPercent: number;
+}
+
+// No-auth, real seller-set rate — added to ExiusCart specifically so the
+// site's "X% back" copy (product pages, wallet page, signup) stops being a
+// hardcoded guess. Revalidated hourly: a real rate change shouldn't need a
+// redeploy, but it also doesn't need to be live-fresh on every request.
+export async function getWalletSettings(): Promise<WalletSettings> {
+  const res = await fetch(storeUrl("/wallet-settings"), { next: { revalidate: 3600 } });
+  if (!res.ok) throw new Error(`Failed to load wallet settings: ${res.status}`);
+  const raw = await res.json();
+  return { isEnabled: raw.is_enabled, cashbackPercent: raw.cashback_percent };
+}

@@ -11,14 +11,13 @@ import { WishlistButton } from "@/components/product/wishlist-button";
 import { Price } from "@/components/shared/price";
 import { cheapestVariant } from "@/lib/product-price";
 import { getSpecIcon } from "@/lib/spec-icons";
-import { WALLET_CASHBACK_LABEL } from "@/lib/wallet-rate";
 import { trackViewContent } from "@/lib/tracking";
 
 // Price, stock, color/size picker, quantity, and Add to Cart all live here
 // together — once a variant is selected, the price and stock shown above
 // need to follow it, and those can't stay static JSX in the server-rendered
 // page anymore.
-export function AddToCartSection({ product }: { product: Product }) {
+export function AddToCartSection({ product, cashbackLabel }: { product: Product; cashbackLabel: string }) {
   const router = useRouter();
   // Affiliate products aren't sold by us — no cart, no quantity, no stock
   // info (ExiusCart's checkout rejects them with a 400 if they ever reach
@@ -321,7 +320,7 @@ export function AddToCartSection({ product }: { product: Product }) {
 
       {!isAffiliate && (
         <p className={`text-[11px] text-[#8B8880] ${isDigital ? "mt-1.5 text-left" : "mt-3 text-center"}`}>
-          {WALLET_CASHBACK_LABEL} back in your ODTSI Wallet on this order
+          {cashbackLabel} back in your ODTSI Wallet on this order
         </p>
       )}
       </div>

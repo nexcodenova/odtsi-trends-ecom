@@ -7,7 +7,6 @@ import type { Product } from "@odtsi/exiuscart-client";
 import { addToCart } from "@/lib/cart";
 import { notifyAdded } from "@/lib/notify";
 import { formatCurrency, formatCurrencyParts } from "@odtsi/utils";
-import { WALLET_CASHBACK_LABEL } from "@/lib/wallet-rate";
 
 // A distinct display face for the pricing/titles here, separate from the
 // site's body font (Plus Jakarta Sans) — geometric and punchy, so the
@@ -36,7 +35,7 @@ function BigPrice({ amount, currency }: { amount: number; currency: string }) {
 // many of *that* bundle), separate from the plain "quick buy" quantity up
 // in AddToCartSection. Only the selected card's bundle × its own stepper
 // value is what Add to Cart here actually adds.
-export function PackSelector({ product }: { product: Product }) {
+export function PackSelector({ product, cashbackLabel }: { product: Product; cashbackLabel: string }) {
   const price = (amount: number) => formatCurrency(amount, product.currency);
 
   const defaultTierIndex = Math.max(0, product.quantityTiers.findIndex((t) => t.recommended));
@@ -198,7 +197,7 @@ export function PackSelector({ product }: { product: Product }) {
         >
           {!product.inStock ? "Out of Stock" : justAdded ? "Added to Cart" : "Add to Cart"}
         </button>
-        <p className="mt-3 text-center text-[11px] text-[#8B8880]">{WALLET_CASHBACK_LABEL} back in your ODTSI Wallet on this order</p>
+        <p className="mt-3 text-center text-[11px] text-[#8B8880]">{cashbackLabel} back in your ODTSI Wallet on this order</p>
       </div>
     </div>
   );

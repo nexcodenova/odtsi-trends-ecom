@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FocusEvent, type FormEvent } from "react";
 import Link from "next/link";
 import { useCart } from "@/hooks/use-cart";
 import { formatCurrency } from "@odtsi/utils";
-import { createCheckout } from "@odtsi/exiuscart-client";
+import { createCheckout, notifyCheckoutStarted } from "@odtsi/exiuscart-client";
 import { saveOrderRecord } from "@/lib/order-history";
 import { getBuyNowItem, clearBuyNowItem } from "@/lib/buy-now";
 import { cartSubtotal, clearCart, type CartItem } from "@/lib/cart";
@@ -42,6 +42,21 @@ export function CheckoutContent() {
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [buyNowItem, items.length]);
+
+  // Abandoned Cart recovery needs this fired once a real email is captured,
+  // before order submission — not on every keystroke/blur of the same
+  // email, so a ref (not state) tracks the last email this already fired
+  // for.
+  const lastCheckoutStartedEmail = useRef<string | null>(null);
+  function handleEmailBlur(e: FocusEvent<HTMLInputElement>) {
+    const email = e.currentTarget.value.trim().toLowerCase();
+    if (!email || !email.includes("@") || email === lastCheckoutStartedEmail.current) return;
+    lastCheckoutStartedEmail.current = email;
+    notifyCheckoutStarted(
+      email,
+      items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+    );
+  }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -149,7 +164,7 @@ export function CheckoutContent() {
             <h2 className="text-sm font-bold uppercase tracking-wide text-[#8B8880]">Contact</h2>
             <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
               <input name="name" required placeholder="Full name" className="h-12 rounded-xl border border-black/10 px-4 text-sm outline-none focus:border-primary" />
-              <input name="email" type="email" required placeholder="Email" className="h-12 rounded-xl border border-black/10 px-4 text-sm outline-none focus:border-primary" />
+              <input name="email" type="email" required placeholder="Email" onBlur={handleEmailBlur} className="h-12 rounded-xl border border-black/10 px-4 text-sm outline-none focus:border-primary" />
               <input name="phone" required placeholder="Phone" className="h-12 rounded-xl border border-black/10 px-4 text-sm outline-none focus:border-primary sm:col-span-2" />
             </div>
           </div>

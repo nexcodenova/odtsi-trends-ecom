@@ -35,16 +35,3 @@ export async function getReviews(slug: string): Promise<ProductReview[]> {
   return raw.map(mapReview);
 }
 
-export async function submitReview(
-  slug: string,
-  payload: { rating: number; comment: string },
-  token: string,
-): Promise<ProductReview> {
-  const res = await fetch(storeUrl(`/products/${slug}/reviews`), {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) throw new Error(`Failed to submit review: ${res.status}`);
-  return mapReview(await res.json());
-}
