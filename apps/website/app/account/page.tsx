@@ -46,13 +46,13 @@ export default async function AccountPage() {
         <div className="mt-8 flex w-full flex-col gap-3 sm:flex-row">
           <Link
             href="/login"
-            className="flex h-12 flex-1 items-center justify-center rounded-xl bg-primary text-sm font-bold text-white transition hover:bg-primary-hover"
+            className="flex h-14 items-center sm:flex-1 justify-center rounded-2xl bg-primary text-base font-extrabold text-white shadow-[0_10px_24px_-8px_rgba(27,42,94,0.5)] transition hover:bg-primary-hover sm:h-12 sm:text-sm"
           >
             Sign In
           </Link>
           <Link
             href="/signup"
-            className="flex h-12 flex-1 items-center justify-center rounded-xl bg-action text-sm font-bold text-action-ink transition hover:brightness-95"
+            className="flex h-14 items-center sm:flex-1 justify-center rounded-2xl bg-gradient-to-br from-[#F6C935] to-[#C99200] text-base font-extrabold text-[#16161A] shadow-[0_10px_24px_-8px_rgba(201,146,0,0.55)] transition hover:brightness-105 sm:h-12 sm:text-sm"
           >
             Create Account
           </Link>

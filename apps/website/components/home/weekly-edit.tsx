@@ -7,6 +7,7 @@ import { ZoomIn } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { BlurFadeIn } from "@/components/shared/blur-fade-in";
+import type { Category } from "@odtsi/exiuscart-client";
 
 interface EditTile {
   label: string;
@@ -14,18 +15,31 @@ interface EditTile {
   imageUrl: string;
 }
 
-// Same 5 real category tiles as before — Kids goes first so it lands in
-// the large featured cell, same prominence it already had as the portrait
-// image in the old masonry layout. Image files are named generically
-// (image1.png...image5.png) rather than by category — the visible label
-// below is what customers actually see; the file name is just internal.
-const TILES: EditTile[] = [
-  { label: "Kids", href: "/category/baby-kids", imageUrl: "/weekly-edit/image1.png" },
-  { label: "Smart Gadgets", href: "/category/smart-gadgets", imageUrl: "/weekly-edit/image2.png" },
-  { label: "Daily Life", href: "/category/home-kitchen", imageUrl: "/weekly-edit/image3.png" },
-  { label: "Beauty", href: "/category/beauty-tools", imageUrl: "/weekly-edit/image4.png" },
-  { label: "Travel", href: "/category/travel", imageUrl: "/weekly-edit/image5.png" },
+// Curated photography (image1.png...image5.png, generically named — see
+// the git history for why) paired with 5 real categories by slug. Labels
+// used to be hardcoded editorial text ("Kids", "Daily Life"...) that could
+// drift from the category's actual name — now the label is always the
+// real category.name, so this section can't show a different name for a
+// category than the live category grid does.
+const SLOTS: { slug: string; imageUrl: string }[] = [
+  { slug: "baby-kids", imageUrl: "/weekly-edit/image1.png" },
+  { slug: "smart-gadgets", imageUrl: "/weekly-edit/image2.png" },
+  { slug: "home-kitchen", imageUrl: "/weekly-edit/image3.png" },
+  { slug: "beauty-tools", imageUrl: "/weekly-edit/image4.png" },
+  { slug: "travel", imageUrl: "/weekly-edit/image5.png" },
 ];
+
+function buildTiles(categories: Category[]): EditTile[] {
+  const bySlug = new Map(categories.map((c) => [c.slug, c]));
+  return SLOTS.flatMap(({ slug, imageUrl }) => {
+    const category = bySlug.get(slug);
+    // A slot whose real category doesn't exist (renamed/deleted on
+    // ExiusCart's side) is dropped rather than shown with a fabricated
+    // name — same honest-empty rule the category grid follows.
+    if (!category) return [];
+    return [{ label: category.name, href: `/category/${category.slug}`, imageUrl }];
+  });
+}
 
 // The zoom button is a real, separate control from the tile's own Link —
 // clicking the tile navigates to that real category (the actual point of
@@ -66,9 +80,13 @@ function Tile({ tile, big, onPreview }: { tile: EditTile; big?: boolean; onPrevi
   );
 }
 
-export function WeeklyEdit() {
+export function WeeklyEdit({ categories }: { categories: Category[] }) {
   const [active, setActive] = React.useState<EditTile | null>(null);
-  const [big, ...rest] = TILES;
+  const tiles = buildTiles(categories);
+  // Honest-empty: no real categories matched any slot, so there's nothing
+  // real to curate — same rule the category grid and product rows follow.
+  if (tiles.length === 0) return null;
+  const [big, ...rest] = tiles;
 
   return (
     <section className="mx-auto max-w-[1400px] px-4 py-10 sm:px-5 sm:py-14">
@@ -77,7 +95,7 @@ export function WeeklyEdit() {
           <Badge variant="action">Fresh Picks</Badge>
           <h2 className="mt-3 text-3xl font-extrabold text-[#16161A] sm:text-4xl">This Week&apos;s Edit</h2>
         </div>
-        <span className="hidden text-sm text-[#8B8880] sm:block">{TILES.length} Collections</span>
+        <span className="hidden text-sm text-[#8B8880] sm:block">{tiles.length} Collections</span>
       </div>
 
       <Dialog open={active !== null} onOpenChange={(open) => !open && setActive(null)}>

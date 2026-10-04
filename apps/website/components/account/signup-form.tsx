@@ -97,7 +97,7 @@ export function SignupForm({ cashbackLabel }: { cashbackLabel: string }) {
         <button
           type="submit"
           disabled={status === "loading"}
-          className="mt-2 h-12 rounded-xl bg-action text-sm font-bold text-action-ink transition hover:brightness-95 disabled:opacity-60"
+          className="mt-2 h-14 rounded-2xl bg-gradient-to-br from-[#F6C935] to-[#C99200] text-base font-extrabold text-[#16161A] shadow-[0_10px_24px_-8px_rgba(201,146,0,0.55)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none sm:h-12 sm:text-sm"
         >
           {status === "loading" ? "Creating account..." : "Create Account"}
         </button>

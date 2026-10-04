@@ -44,7 +44,7 @@ export default async function HomePage() {
       <HeroCarousel slides={HERO_SLIDES} intervalMs={4000} />
       <CategoryGrid categories={categories} />
       <TrendingProducts />
-      <WeeklyEdit />
+      <WeeklyEdit categories={categories} />
       <MostViewed />
       <PopularAffiliate />
       <DigitalProducts />
