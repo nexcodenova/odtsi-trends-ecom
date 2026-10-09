@@ -15,30 +15,16 @@ interface EditTile {
   imageUrl: string;
 }
 
-// Curated photography (image1.png...image5.png, generically named — see
-// the git history for why) paired with 5 real categories by slug. Labels
-// used to be hardcoded editorial text ("Kids", "Daily Life"...) that could
-// drift from the category's actual name — now the label is always the
-// real category.name, so this section can't show a different name for a
-// category than the live category grid does.
-const SLOTS: { slug: string; imageUrl: string }[] = [
-  { slug: "baby-kids", imageUrl: "/weekly-edit/image1.png" },
-  { slug: "smart-gadgets", imageUrl: "/weekly-edit/image2.png" },
-  { slug: "home-kitchen", imageUrl: "/weekly-edit/image3.png" },
-  { slug: "beauty-tools", imageUrl: "/weekly-edit/image4.png" },
-  { slug: "travel", imageUrl: "/weekly-edit/image5.png" },
-];
+const MAX_TILES = 5;
 
+// Entirely from ExiusCart: the first 5 main categories (in the seller's own
+// sort order) that have a real image. A category without an image is
+// skipped rather than shown as a blank tile.
 function buildTiles(categories: Category[]): EditTile[] {
-  const bySlug = new Map(categories.map((c) => [c.slug, c]));
-  return SLOTS.flatMap(({ slug, imageUrl }) => {
-    const category = bySlug.get(slug);
-    // A slot whose real category doesn't exist (renamed/deleted on
-    // ExiusCart's side) is dropped rather than shown with a fabricated
-    // name — same honest-empty rule the category grid follows.
-    if (!category) return [];
-    return [{ label: category.name, href: `/category/${category.slug}`, imageUrl }];
-  });
+  return categories
+    .filter((c) => c.parentId === null && c.imageUrl)
+    .slice(0, MAX_TILES)
+    .map((c) => ({ label: c.name, href: `/category/${c.slug}`, imageUrl: c.imageUrl! }));
 }
 
 // The zoom button is a real, separate control from the tile's own Link —
@@ -83,9 +69,9 @@ function Tile({ tile, big, onPreview }: { tile: EditTile; big?: boolean; onPrevi
 export function WeeklyEdit({ categories }: { categories: Category[] }) {
   const [active, setActive] = React.useState<EditTile | null>(null);
   const tiles = buildTiles(categories);
-  // Honest-empty: no real categories matched any slot, so there's nothing
-  // real to curate — same rule the category grid and product rows follow.
-  if (tiles.length === 0) return null;
+  // The grid is laid out for exactly 5 tiles (1 featured + 4) — with fewer,
+  // it would show empty cells, so the section waits until there are 5.
+  if (tiles.length < MAX_TILES) return null;
   const [big, ...rest] = tiles;
 
   return (

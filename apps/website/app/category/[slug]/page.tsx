@@ -2,15 +2,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ProductCard } from "@/components/product/product-card";
 import { getCategories, getProducts, type Category, type Product } from "@odtsi/exiuscart-client";
-import { getPlaceholderCategory } from "@/lib/placeholder-data";
 
 async function loadCategory(slug: string): Promise<Category | null> {
   try {
     const categories = await getCategories();
     return categories.find((c) => c.slug === slug) ?? null;
   } catch {
-    // ExiusCart's public /categories endpoint isn't live yet.
-    return getPlaceholderCategory(slug) ?? null;
+    return null;
   }
 }
 
