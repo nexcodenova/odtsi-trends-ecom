@@ -30,8 +30,13 @@ export function OnSaleHero({ maxDiscountPct, dealCount }: { maxDiscountPct: numb
         </div>
 
         <div className="shrink-0 self-end text-right sm:self-auto">
-          <p className="text-xl font-extrabold uppercase tracking-wide text-white sm:text-2xl">Up to</p>
-          <p className="text-4xl font-extrabold leading-tight text-action sm:text-5xl lg:text-6xl">{maxDiscountPct}% OFF</p>
+          <p className="text-sm font-extrabold uppercase tracking-[0.2em] text-white sm:text-base">Up to</p>
+          <p className="mt-1 flex items-baseline justify-end gap-1 leading-none">
+            <span className="font-serif text-[64px] font-black italic text-action [text-shadow:0_6px_24px_rgba(201,146,0,0.55)] sm:text-[88px] lg:text-[112px]">
+              {maxDiscountPct}%
+            </span>
+          </p>
+          <p className="text-xl font-extrabold uppercase tracking-[0.3em] text-white sm:text-2xl">Off</p>
         </div>
       </div>
     </div>

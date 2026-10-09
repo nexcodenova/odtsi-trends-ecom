@@ -4,15 +4,20 @@ import { OnSaleHero } from "@/components/collection/on-sale-hero";
 
 const MIN_DISCOUNT_PCT = 40;
 
+// Explicit product call: when no real product is currently discounted,
+// show this placeholder in the banner instead of "0% OFF". Not derived
+// from real data — overridden the moment any real discount exists.
+const FALLBACK_MAX_DISCOUNT_PCT = 90;
+
 function discountPct(product: Product): number {
   if (product.compareAtPrice === null || product.compareAtPrice <= product.price) return 0;
   return (1 - product.price / product.compareAtPrice) * 100;
 }
 
-async function loadDeals(): Promise<Product[]> {
+async function loadAllDiscounted(): Promise<Product[]> {
   try {
     const products = await getProducts();
-    return products.filter((product) => discountPct(product) > MIN_DISCOUNT_PCT);
+    return products.filter((product) => discountPct(product) > 0);
   } catch (err) {
     console.error("[collection-on-sale]", err);
     return [];
@@ -20,10 +25,16 @@ async function loadDeals(): Promise<Product[]> {
 }
 
 export default async function OnSalePage() {
-  const products = await loadDeals();
-  // Real max, from the same products actually listed below — never a
-  // rounder/bigger number than what's really in the grid.
-  const maxDiscountPct = products.length > 0 ? Math.round(Math.max(...products.map(discountPct))) : 0;
+  const allDiscounted = await loadAllDiscounted();
+  // The grid only lists real standout deals (> MIN_DISCOUNT_PCT% off) —
+  // that threshold is just an internal cutoff for what's worth featuring,
+  // never shown to the shopper as a number. The banner's "up to X% off"
+  // uses the real max across every discounted product, not just the ones
+  // that clear the grid's bar, so it never understates what's genuinely
+  // available.
+  const products = allDiscounted.filter((product) => discountPct(product) > MIN_DISCOUNT_PCT);
+  const maxDiscountPct =
+    allDiscounted.length > 0 ? Math.round(Math.max(...allDiscounted.map(discountPct))) : FALLBACK_MAX_DISCOUNT_PCT;
 
   return (
     <div className="mx-auto max-w-[1400px] px-4 py-8 sm:px-5">
@@ -34,7 +45,7 @@ export default async function OnSalePage() {
         <p className="mt-1 text-sm text-[#716D67]">
           {products.length > 0
             ? `${products.length} hand-picked ${products.length === 1 ? "offer" : "offers"} • Prices shown before checkout`
-            : `No products are discounted more than ${MIN_DISCOUNT_PCT}% right now — check back soon.`}
+            : "No standout deals right now — check back soon."}
         </p>
 
         {products.length > 0 && (

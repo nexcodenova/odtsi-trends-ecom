@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import Image from "next/image";
-import { Heart, Menu, ShoppingCart, User, ChevronDown, Flame, Tag, Layers, Gift, Newspaper, Wallet, Brain } from "lucide-react";
+import { Heart, Menu, ShoppingCart, User, ChevronDown, Flame, Tag, Layers, Gift, Newspaper, Wallet, Brain, Sparkles } from "lucide-react";
 import type { Category } from "@odtsi/exiuscart-client";
 import { useCart } from "@/hooks/use-cart";
 import { useWishlist } from "@/hooks/use-wishlist";
@@ -14,6 +14,7 @@ import { CountBadge } from "@/components/shared/count-badge";
 const QUICK_LINKS = [
   { label: "Trending Now", href: "/collection/trending", icon: Flame },
   { label: "On Sale", href: "/collection/on-sale", icon: Tag },
+  { label: "New Arrivals", href: "/collection/new", icon: Sparkles },
   { label: "Collections", href: "/collections", icon: Layers },
   { label: "Gifts", href: "/collection/gifts", icon: Gift },
   { label: "Blogs", href: "/blog", icon: Newspaper },

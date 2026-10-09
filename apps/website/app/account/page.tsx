@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { User, Wallet as WalletIcon, ChevronRight, Pencil, Lock } from "lucide-react";
+import { User, Wallet as WalletIcon, ChevronRight, Pencil, Lock, Landmark } from "lucide-react";
 import { getSession } from "@/lib/session";
 import { LogoutButton } from "@/components/account/logout-button";
 import { TrackOrder } from "@/components/account/track-order";
@@ -92,6 +92,18 @@ export default async function AccountPage() {
             </span>
             <ChevronRight size={18} className="text-[#8B8880]" />
           </Link>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Payout Method</CardTitle>
+            <CardDescription>
+              Save your PayPal account to withdraw wallet cashback once your balance reaches $25.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            <ComingSoonRow icon={Landmark} label="Save PayPal Account" />
+          </CardContent>
         </Card>
       </div>
 
