@@ -25,7 +25,8 @@ async function loadMostViewed(): Promise<Product[]> {
       )
       .sort((a, b) => (b.viewCount ?? 0) - (a.viewCount ?? 0))
       .slice(0, 12);
-  } catch {
+  } catch (err) {
+    console.error("[most-viewed]", err);
     return [];
   }
 }

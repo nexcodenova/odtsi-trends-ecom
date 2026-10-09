@@ -38,8 +38,8 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   let product;
   try {
     product = await getProduct(slug);
-  } catch {
-    // ExiusCart's public /products/{slug} endpoint isn't live yet.
+  } catch (err) {
+    console.error("[product-page]", err);
     product = null;
   }
 

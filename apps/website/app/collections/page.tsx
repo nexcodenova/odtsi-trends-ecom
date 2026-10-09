@@ -4,9 +4,8 @@ import { ShopGrid } from "@/components/shop/shop-grid";
 async function loadProducts(): Promise<Product[]> {
   try {
     return await getProducts();
-  } catch {
-    // ExiusCart's public /products endpoint isn't live yet — no fake
-    // products, just an honest empty state until it's deployed.
+  } catch (err) {
+    console.error("[collections-page]", err);
     return [];
   }
 }

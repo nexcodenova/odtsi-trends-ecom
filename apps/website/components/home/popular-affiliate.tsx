@@ -13,7 +13,8 @@ async function loadAffiliateProducts(): Promise<Product[]> {
     return products
       .filter((p) => p.productType === "affiliate")
       .sort((a, b) => (b.viewCount ?? 0) - (a.viewCount ?? 0));
-  } catch {
+  } catch (err) {
+    console.error("[popular-affiliate]", err);
     return [];
   }
 }

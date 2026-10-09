@@ -230,7 +230,13 @@ export async function getProducts(params?: { category?: string; collection?: str
     fetch(storeUrl(`/products${qs ? `?${qs}` : ""}`), { next: { revalidate: 60 } }),
     loadCategorySlugMap(),
   ]);
-  if (!res.ok) throw new Error(`Failed to load products: ${res.status}`);
+  // Logged here, not just thrown — callers catch-and-return-[] (honest-empty
+  // UI), which would otherwise swallow a real ExiusCart outage silently and
+  // let Next's Data Cache keep serving a stale pre-outage response forever.
+  if (!res.ok) {
+    console.error(`[exiuscart] Failed to load products: ${res.status}`);
+    throw new Error(`Failed to load products: ${res.status}`);
+  }
   const raw: RawProduct[] = await res.json();
   return raw.map((p) => mapProduct(p, categorySlugById));
 }
@@ -240,7 +246,10 @@ export async function getProduct(slug: string): Promise<Product> {
     fetch(storeUrl(`/products/${slug}`), { next: { revalidate: 60 } }),
     loadCategorySlugMap(),
   ]);
-  if (!res.ok) throw new Error(`Failed to load product "${slug}": ${res.status}`);
+  if (!res.ok) {
+    console.error(`[exiuscart] Failed to load product "${slug}": ${res.status}`);
+    throw new Error(`Failed to load product "${slug}": ${res.status}`);
+  }
   const raw: RawProduct = await res.json();
   return mapProduct(raw, categorySlugById);
 }

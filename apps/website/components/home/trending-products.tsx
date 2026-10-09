@@ -10,7 +10,8 @@ async function loadProducts(): Promise<Product[]> {
   try {
     const products = await getProducts();
     return products.filter((p) => p.productType === "physical");
-  } catch {
+  } catch (err) {
+    console.error("[trending-products]", err);
     return [];
   }
 }

@@ -15,9 +15,8 @@ async function loadCategory(slug: string): Promise<Category | null> {
 async function loadProducts(slug: string): Promise<Product[]> {
   try {
     return await getProducts({ category: slug });
-  } catch {
-    // ExiusCart's public /products endpoint isn't live yet — no fake
-    // products, just an honest empty state until it's deployed.
+  } catch (err) {
+    console.error("[category-page]", err);
     return [];
   }
 }

@@ -13,9 +13,8 @@ async function loadDeals(): Promise<Product[]> {
   try {
     const products = await getProducts();
     return products.filter((product) => discountPct(product) > MIN_DISCOUNT_PCT);
-  } catch {
-    // ExiusCart's public /products endpoint isn't live yet — no fake
-    // products, just an honest empty state until it's deployed.
+  } catch (err) {
+    console.error("[collection-on-sale]", err);
     return [];
   }
 }

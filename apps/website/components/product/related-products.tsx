@@ -18,7 +18,8 @@ async function loadRelated(categorySlug: string, excludeId: string): Promise<Pro
       .filter((p) => p.id !== excludeId)
       .sort((a, b) => (b.viewCount ?? 0) - (a.viewCount ?? 0))
       .slice(0, MAX_RELATED);
-  } catch {
+  } catch (err) {
+    console.error("[related-products]", err);
     return [];
   }
 }

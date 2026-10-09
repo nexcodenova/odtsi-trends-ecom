@@ -9,7 +9,8 @@ async function loadDigitalProducts(): Promise<Product[]> {
   try {
     const products = await getProducts();
     return products.filter((p) => p.productType === "digital");
-  } catch {
+  } catch (err) {
+    console.error("[digital-products]", err);
     return [];
   }
 }

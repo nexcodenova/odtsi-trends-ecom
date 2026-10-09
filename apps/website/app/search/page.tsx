@@ -6,7 +6,8 @@ import { SearchX } from "lucide-react";
 async function loadResults(q: string): Promise<Product[]> {
   try {
     return await getProducts({ search: q });
-  } catch {
+  } catch (err) {
+    console.error("[search-page]", err);
     return [];
   }
 }
