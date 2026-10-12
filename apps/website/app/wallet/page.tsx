@@ -1,18 +1,30 @@
 import Link from "next/link";
 import { Wallet as WalletIcon, ShoppingBag, Landmark, PiggyBank } from "lucide-react";
-import { getWallet, type Wallet } from "@odtsi/exiuscart-client";
+import {
+  getWallet,
+  getPayoutMethod,
+  getPayoutRequests,
+  type Wallet,
+  type PayoutRequest,
+} from "@odtsi/exiuscart-client";
 import { getSession } from "@/lib/session";
 import { formatCurrency } from "@odtsi/utils";
 import { LogoutButton } from "@/components/account/logout-button";
 import { getWalletCashbackLabel } from "@/lib/wallet-rate";
+import { MIN_REDEEM_AMOUNT } from "@/lib/wallet-limits";
+import { WithdrawForm } from "@/components/wallet/withdraw-form";
 
 // Real cash, not points — every dollar credited to a wallet is a dollar
-// that came off a real order. $25 is the minimum balance ExiusCart will
-// need before a redemption (checkout or payout) request is worth batching,
-// same floor most cashback wallets use. Neither redemption path is wired
-// to ExiusCart yet (no checkout wallet-apply, no payout endpoint), so this
-// is shown as the honest target balance, not a live "redeem" button.
-const MIN_REDEEM_AMOUNT = 25;
+// that came off a real order. PayPal withdrawals go to ExiusCart as payout
+// requests the seller pays out; spending it at checkout still has no
+// ExiusCart endpoint, so that path stays marked as coming soon.
+
+const PAYOUT_STATUS_STYLE: Record<PayoutRequest["status"], string> = {
+  pending: "bg-[#FEF3C7] text-[#92400E]",
+  approved: "bg-primary-light text-primary",
+  paid: "bg-[#DCFCE7] text-[#166534]",
+  rejected: "bg-[#FEE2E2] text-[#991B1B]",
+};
 
 function HowItWorks({ currency }: { currency: string }) {
   return (
@@ -65,7 +77,7 @@ function HowItWorks({ currency }: { currency: string }) {
       </div>
 
       <p className="mt-5 rounded-xl bg-[#F6F5F3] px-4 py-3 text-[11px] font-semibold uppercase tracking-wide text-[#8B8880]">
-        Checkout redemption &amp; PayPal withdrawals — coming soon
+        Spending at checkout — coming soon
       </p>
     </div>
   );
@@ -82,6 +94,18 @@ async function loadWallet(token: string): Promise<Wallet | null> {
     console.error("Failed to load wallet:", err);
     return null;
   }
+}
+
+// Payout endpoints aren't live on ExiusCart yet — each falls back on its
+// own so a missing one never hides the real balance above it.
+async function loadPayoutInfo(token: string): Promise<{ paypalEmail: string | null; requests: PayoutRequest[] }> {
+  const [method, requests] = await Promise.allSettled([getPayoutMethod(token), getPayoutRequests(token)]);
+  if (method.status === "rejected") console.error("Failed to load payout method:", method.reason);
+  if (requests.status === "rejected") console.error("Failed to load payout requests:", requests.reason);
+  return {
+    paypalEmail: method.status === "fulfilled" ? method.value.paypalEmail : null,
+    requests: requests.status === "fulfilled" ? requests.value : [],
+  };
 }
 
 export default async function WalletPage() {
@@ -132,7 +156,7 @@ export default async function WalletPage() {
     );
   }
 
-  const wallet = await loadWallet(session.token);
+  const [wallet, payout] = await Promise.all([loadWallet(session.token), loadPayoutInfo(session.token)]);
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-10 sm:py-14 lg:px-8">
@@ -170,6 +194,36 @@ export default async function WalletPage() {
               </p>
             )}
           </div>
+
+          {wallet && (
+            <div className="rounded-2xl border border-black/10 bg-white p-6">
+              <p className="text-xs font-bold uppercase tracking-wide text-[#8B8880]">Withdraw to PayPal</p>
+              <div className="mt-3">
+                <WithdrawForm balance={wallet.balance} currency={wallet.currency} paypalEmail={payout.paypalEmail} />
+              </div>
+            </div>
+          )}
+
+          {payout.requests.length > 0 && (
+            <div className="text-left">
+              <p className="text-xs font-bold uppercase tracking-wide text-[#8B8880]">Withdrawals</p>
+              <div className="mt-3 flex flex-col gap-2">
+                {payout.requests.map((r) => (
+                  <div key={r.id} className="flex items-center justify-between rounded-xl border border-black/10 px-4 py-3">
+                    <div>
+                      <p className="text-sm font-semibold text-[#16161A]">{formatCurrency(r.amount, r.currency)}</p>
+                      <p className="text-xs text-[#8B8880]">
+                        {new Date(r.createdAt).toLocaleDateString()} · {r.paypalEmail}
+                      </p>
+                    </div>
+                    <span className={`rounded-full px-3 py-1 text-xs font-bold capitalize ${PAYOUT_STATUS_STYLE[r.status]}`}>
+                      {r.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {wallet && wallet.transactions.length > 0 && (
             <div className="text-left">

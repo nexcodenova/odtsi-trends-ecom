@@ -74,3 +74,88 @@ export async function getWalletSettings(): Promise<WalletSettings> {
   const raw = await res.json();
   return { isEnabled: raw.is_enabled, cashbackPercent: raw.cashback_percent };
 }
+
+export type PayoutRequestStatus = "pending" | "approved" | "paid" | "rejected";
+
+export interface PayoutRequest {
+  id: string;
+  amount: number;
+  currency: string;
+  paypalEmail: string;
+  status: PayoutRequestStatus;
+  createdAt: string;
+}
+
+interface RawPayoutRequest {
+  id: number;
+  amount: number;
+  currency: string;
+  paypal_email: string;
+  status: PayoutRequestStatus;
+  created_at: string;
+}
+
+function mapPayoutRequest(raw: RawPayoutRequest): PayoutRequest {
+  return {
+    id: String(raw.id),
+    amount: raw.amount,
+    currency: raw.currency,
+    paypalEmail: raw.paypal_email,
+    status: raw.status,
+    createdAt: raw.created_at,
+  };
+}
+
+// What a withdrawal request tells ExiusCart, so the seller's wallet page
+// in ExiusCart can show who asked, what they had, and where to send it.
+// The customer/balance fields are informational for the seller's list —
+// ExiusCart must still trust only the Bearer token for who the customer
+// is, and re-check amount <= real balance and amount >= its minimum.
+export interface PayoutRequestPayload {
+  amount: number;
+  paypalEmail: string;
+  customer: { id: string; name: string; email: string };
+  balanceAtRequest: number;
+  currency: string;
+}
+
+// NOT LIVE YET — POST /wallet/payout-requests → the created request
+// (status "pending"). ExiusCart should hold the amount (debit or reserve
+// it) so the same balance can't be requested twice.
+export async function requestPayout(token: string, payload: PayoutRequestPayload): Promise<PayoutRequest> {
+  const res = await fetch(storeUrl("/wallet/payout-requests"), {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      amount: payload.amount,
+      paypal_email: payload.paypalEmail,
+      customer_id: payload.customer.id,
+      customer_name: payload.customer.name,
+      customer_email: payload.customer.email,
+      balance_at_request: payload.balanceAtRequest,
+      currency: payload.currency,
+    }),
+  });
+  if (!res.ok) {
+    let message = `Withdrawal request failed: ${res.status}`;
+    try {
+      const body = await res.json();
+      if (typeof body?.detail === "string") message = body.detail;
+      else if (typeof body?.detail?.message === "string") message = body.detail.message;
+    } catch {}
+    throw new Error(message);
+  }
+  return mapPayoutRequest(await res.json());
+}
+
+// NOT LIVE YET — GET /wallet/payout-requests → this customer's requests,
+// newest first, so the wallet page can show pending/paid status.
+export async function getPayoutRequests(token: string): Promise<PayoutRequest[]> {
+  const res = await fetch(storeUrl("/wallet/payout-requests"), {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`Failed to load payout requests: ${res.status}`);
+  const raw: RawPayoutRequest[] = await res.json();
+  return raw.map(mapPayoutRequest);
+}

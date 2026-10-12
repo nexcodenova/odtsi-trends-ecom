@@ -1,9 +1,13 @@
 import Link from "next/link";
-import { User, Wallet as WalletIcon, ChevronRight, Pencil, Lock, Landmark } from "lucide-react";
+import { User, Wallet as WalletIcon, ChevronRight } from "lucide-react";
+import { getPayoutMethod } from "@odtsi/exiuscart-client";
 import { getSession } from "@/lib/session";
 import { LogoutButton } from "@/components/account/logout-button";
 import { TrackOrder } from "@/components/account/track-order";
 import { OrderHistory } from "@/components/account/order-history";
+import { EditProfileForm } from "@/components/account/edit-profile-form";
+import { ChangePasswordForm } from "@/components/account/change-password-form";
+import { PayoutMethodForm } from "@/components/account/payout-method-form";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
 // Reads the session cookie per-request — never worth prerendering, and
@@ -11,21 +15,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 // detection to opt this route out of static generation at build time.
 export const dynamic = "force-dynamic";
 
-// Not wired to anything — ExiusCart has no profile-update or
-// change-password endpoint yet. Shown as an honest "coming soon" row
-// instead of a form that would submit nowhere, or hiding it entirely.
-function ComingSoonRow({ icon: Icon, label }: { icon: typeof Pencil; label: string }) {
-  return (
-    <div className="flex items-center justify-between p-5 opacity-50">
-      <span className="flex items-center gap-3 text-sm font-bold text-[#16161A]">
-        <Icon size={18} className="text-[#8B8880]" />
-        {label}
-      </span>
-      <span className="rounded-full bg-[#F6F5F3] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-[#8B8880]">
-        Coming Soon
-      </span>
-    </div>
-  );
+// GET /account/payout-method isn't live on ExiusCart yet — until it is,
+// the form just starts empty instead of breaking the whole account page.
+async function loadPaypalEmail(token: string): Promise<string | null> {
+  try {
+    return (await getPayoutMethod(token)).paypalEmail;
+  } catch (err) {
+    console.error("Failed to load payout method:", err);
+    return null;
+  }
 }
 
 export default async function AccountPage() {
@@ -61,6 +59,8 @@ export default async function AccountPage() {
     );
   }
 
+  const paypalEmail = await loadPaypalEmail(session.token);
+
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-5 px-5 py-10 sm:py-14">
       <div className="mx-auto flex w-full max-w-lg flex-col gap-5">
@@ -69,8 +69,6 @@ export default async function AccountPage() {
             <User size={28} />
           </span>
           <h1 className="mt-4 text-2xl font-extrabold text-[#16161A] sm:text-3xl">{session.customer.name}</h1>
-          {/* Email is read-only — ExiusCart doesn't have a profile-update
-              endpoint yet, so there's nothing real to change it into. */}
           <p className="mt-1 text-sm text-[#716D67]">{session.customer.email}</p>
         </div>
 
@@ -79,8 +77,8 @@ export default async function AccountPage() {
             <CardTitle>Account Settings</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col divide-y divide-black/5 p-0">
-            <ComingSoonRow icon={Pencil} label="Edit Profile" />
-            <ComingSoonRow icon={Lock} label="Change Password" />
+            <EditProfileForm name={session.customer.name} email={session.customer.email} />
+            <ChangePasswordForm />
           </CardContent>
         </Card>
 
@@ -102,7 +100,7 @@ export default async function AccountPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="p-0">
-            <ComingSoonRow icon={Landmark} label="Save PayPal Account" />
+            <PayoutMethodForm paypalEmail={paypalEmail} />
           </CardContent>
         </Card>
       </div>
