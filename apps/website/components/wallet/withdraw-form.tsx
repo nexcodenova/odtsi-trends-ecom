@@ -8,39 +8,41 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FormStatusMessage, readError, type FormStatus } from "@/components/account/form-status";
-import { MIN_REDEEM_AMOUNT } from "@/lib/wallet-limits";
 
-// Sends a withdrawal request to ExiusCart — the seller sees who asked,
-// their balance, the amount, and the PayPal account to pay, then pays it
-// out from ExiusCart. Nothing moves until the seller acts on it.
+// Sends a withdrawal request to ExiusCart — the amount goes on hold and
+// the seller pays it out to the saved payout method. Every rule (minimum,
+// balance, enabled, payout-change hold) is enforced again on its side.
 export function WithdrawForm({
   balance,
   currency,
-  paypalEmail,
+  minAmount,
+  destination,
 }: {
   balance: number;
   currency: string;
-  paypalEmail: string | null;
+  minAmount: number;
+  // e.g. "PayPal · jane@example.com" — null until one is saved.
+  destination: string | null;
 }) {
   const router = useRouter();
   const [amount, setAmount] = useState(balance.toFixed(2));
   const [status, setStatus] = useState<FormStatus>({ kind: "idle" });
 
-  if (!paypalEmail) {
+  if (!destination) {
     return (
       <p className="text-sm text-[#716D67]">
         <Link href="/account" className="font-bold text-primary underline-offset-2 hover:underline">
-          Save your PayPal account
+          Add a payout method
         </Link>{" "}
         to withdraw your balance.
       </p>
     );
   }
 
-  if (balance < MIN_REDEEM_AMOUNT) {
+  if (balance <= 0 || balance < minAmount) {
     return (
       <p className="text-sm text-[#716D67]">
-        You can withdraw once your balance reaches {formatCurrency(MIN_REDEEM_AMOUNT, currency)}.
+        You can withdraw once your balance reaches {formatCurrency(Math.max(minAmount, 0.01), currency)}.
       </p>
     );
   }
@@ -57,7 +59,7 @@ export function WithdrawForm({
       setStatus({ kind: "error", message: await readError(res) });
       return;
     }
-    setStatus({ kind: "success", message: "Withdrawal requested — it'll be sent to your PayPal once approved." });
+    setStatus({ kind: "success", message: "Withdrawal requested — it'll be paid out once approved." });
     router.refresh();
   }
 
@@ -70,13 +72,13 @@ export function WithdrawForm({
           type="number"
           inputMode="decimal"
           step="0.01"
-          min={MIN_REDEEM_AMOUNT}
+          min={minAmount > 0 ? minAmount : 0.01}
           max={balance}
           required
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
         />
-        <p className="text-xs text-[#8B8880]">Paid to {paypalEmail}</p>
+        <p className="text-xs text-[#8B8880]">Paid to {destination}</p>
       </div>
       <FormStatusMessage status={status} />
       <Button type="submit" variant="action" disabled={status.kind === "loading"}>

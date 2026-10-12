@@ -67,7 +67,7 @@ export function ProductCard({ product, compact, sale, discountBadge }: ProductCa
   }, [product.id]);
 
   function handleAdd() {
-    addToCart({ productId: product.id, slug: product.slug, name: product.name, price, currency: product.currency, imageUrl, variantId: variant?.sku });
+    addToCart({ productId: product.id, slug: product.slug, name: product.name, price, currency: product.currency, imageUrl, variantId: variant?.sku, exiusVariantId: variant?.id });
     notifyAdded({ type: "cart", name: product.name, imageUrl, price, currency: product.currency });
     setJustAdded(true);
     setTimeout(() => setJustAdded(false), 1500);

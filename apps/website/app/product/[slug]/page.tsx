@@ -1,7 +1,9 @@
+import { cache } from "react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Truck } from "lucide-react";
-import { getProduct, getReviews, type ProductReview } from "@odtsi/exiuscart-client";
+import { ArrowRight, Mail, Truck } from "lucide-react";
+import { getProduct, getReviews, type Product, type ProductReview } from "@odtsi/exiuscart-client";
 import { ProductGallery } from "@/components/product/product-gallery";
 import { AddToCartSection } from "@/components/product/add-to-cart-section";
 import { BestSellerBadge } from "@/components/product/best-seller-badge";
@@ -32,16 +34,45 @@ async function loadReviews(slug: string): Promise<ProductReview[]> {
   }
 }
 
-export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
-
-  let product;
+// One fetch shared by generateMetadata and the page itself.
+const loadProduct = cache(async (slug: string): Promise<Product | null> => {
   try {
-    product = await getProduct(slug);
+    return await getProduct(slug);
   } catch (err) {
     console.error("[product-page]", err);
-    product = null;
+    return null;
   }
+});
+
+function plainText(html: string): string {
+  return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+// Seller-set seo_title / meta_description win as-is. Without them, a
+// title/description is built from the name, the first couple of SEO
+// keywords and the description — never a raw <meta keywords> dump.
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const product = await loadProduct(slug);
+  if (!product) return {};
+
+  const keywords = product.seoKeywords.slice(0, 2).join(", ");
+  const title = product.seoTitle ?? `${product.name}${keywords ? ` — ${keywords}` : ""} | ODTSI`;
+  const fallbackDescription = product.description ? plainText(product.description).slice(0, 155) : "";
+  const description =
+    product.metaDescription ??
+    (fallbackDescription || `Shop ${product.name}${keywords ? ` — ${product.seoKeywords.slice(0, 3).join(", ")}` : ""} at ODTSI.`);
+
+  return {
+    title,
+    description,
+    openGraph: { title, description, images: product.imageUrl ? [product.imageUrl] : undefined },
+  };
+}
+
+export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const product = await loadProduct(slug);
 
   if (!product) {
     notFound();
@@ -149,13 +180,33 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             <AddToCartSection product={product} cashbackLabel={cashbackLabel} />
           </div>
 
-          {/* Seller's own note on shipping/handling time — physical only,
-              real field from ExiusCart, shown only when they've actually
-              written one. */}
-          {product.productType === "physical" && product.shippingNote && (
+          {/* Seller's shipping journey as an arrow flow, falling back to
+              their free-text note when no steps are set — physical only,
+              shown only when they've actually written one. */}
+          {product.productType === "physical" && product.shippingSteps.length > 0 && (
+            <div className="mt-4 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[12.5px] leading-snug text-[#716D67]">
+              <Truck size={15} className="shrink-0 text-[#8B8880]" />
+              {product.shippingSteps.map((step, i) => (
+                <span key={i} className="flex items-center gap-1.5">
+                  {i > 0 && <ArrowRight size={12} className="shrink-0 text-[#B5B2AB]" />}
+                  <span className="font-semibold text-[#4A4844]">{step}</span>
+                </span>
+              ))}
+            </div>
+          )}
+          {product.productType === "physical" && product.shippingSteps.length === 0 && product.shippingNote && (
             <p className="mt-4 flex items-start gap-2 text-[12.5px] leading-snug text-[#716D67]">
               <Truck size={15} className="mt-0.5 shrink-0 text-[#8B8880]" />
               {product.shippingNote}
+            </p>
+          )}
+
+          {/* ExiusCart emails digital products straight to the buyer with a
+              secure download link and access code. */}
+          {isDigital && (
+            <p className="mt-4 flex items-start gap-2 text-[12.5px] leading-snug text-[#716D67]">
+              <Mail size={15} className="mt-0.5 shrink-0 text-[#8B8880]" />
+              Delivered by email — a secure download link and access code are sent once your payment is confirmed.
             </p>
           )}
 

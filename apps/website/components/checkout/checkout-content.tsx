@@ -4,13 +4,32 @@ import { useEffect, useRef, useState, type FocusEvent, type FormEvent } from "re
 import Link from "next/link";
 import { useCart } from "@/hooks/use-cart";
 import { formatCurrency } from "@odtsi/utils";
-import { createCheckout, notifyCheckoutStarted } from "@odtsi/exiuscart-client";
+import { notifyCheckoutStarted, previewDiscount, type CheckoutPayload, type CheckoutResult } from "@odtsi/exiuscart-client";
 import { saveOrderRecord } from "@/lib/order-history";
 import { getBuyNowItem, clearBuyNowItem } from "@/lib/buy-now";
 import { cartSubtotal, clearCart, type CartItem } from "@/lib/cart";
 import { trackInitiateCheckout, trackPurchase } from "@/lib/tracking";
 
-export function CheckoutContent() {
+// Goes through this site's own /api/checkout so a signed-in shopper's
+// token (needed for wallet spending) never reaches client JS.
+async function submitCheckout(payload: CheckoutPayload): Promise<CheckoutResult> {
+  const res = await fetch("/api/checkout", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(typeof body?.error === "string" ? body.error : `Checkout failed: ${res.status}`);
+  return body as CheckoutResult;
+}
+
+export function CheckoutContent({
+  customer,
+  wallet,
+}: {
+  customer: { name: string; email: string } | null;
+  wallet: { balance: number; currency: string } | null;
+}) {
   const { items: cartItems, subtotal: cartSubtotalAmount } = useCart();
   // A Buy Now click stashes exactly one item here instead of touching the
   // real cart — when present, checkout is scoped to just that item so a
@@ -27,6 +46,37 @@ export function CheckoutContent() {
   const price = (amount: number) => formatCurrency(amount, subtotalCurrency);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
+
+  // Discount preview — same validation ExiusCart runs at checkout, so
+  // "applied" here means it will really apply (it's re-checked there).
+  const [discountInput, setDiscountInput] = useState("");
+  const [discount, setDiscount] = useState<{ code: string; amount: number } | null>(null);
+  const [discountStatus, setDiscountStatus] = useState<{ kind: "idle" | "loading" } | { kind: "error"; message: string }>({
+    kind: "idle",
+  });
+  const discountAmount = discount ? Math.min(discount.amount, subtotal) : 0;
+  const afterDiscount = Math.max(subtotal - discountAmount, 0);
+
+  // Only offered when the wallet is in the same currency as the cart —
+  // ExiusCart caps the real amount at the shopper's balance either way.
+  const [useWallet, setUseWallet] = useState(false);
+  const walletUsable = wallet !== null && wallet.balance > 0 && wallet.currency === subtotalCurrency;
+  const walletAmount = useWallet && walletUsable ? Math.min(wallet.balance, afterDiscount) : 0;
+  const total = Math.max(afterDiscount - walletAmount, 0);
+
+  async function applyDiscount() {
+    const code = discountInput.trim();
+    if (!code) return;
+    setDiscountStatus({ kind: "loading" });
+    try {
+      const preview = await previewDiscount(code, subtotal);
+      setDiscount({ code: preview.code, amount: preview.discount });
+      setDiscountStatus({ kind: "idle" });
+    } catch (err) {
+      setDiscount(null);
+      setDiscountStatus({ kind: "error", message: err instanceof Error ? err.message : "That code couldn't be applied." });
+    }
+  }
 
   // Fires once, the first real moment checkout actually has real items to
   // show (not on the buyNowItem===undefined loading frame, not again on
@@ -54,7 +104,7 @@ export function CheckoutContent() {
     lastCheckoutStartedEmail.current = email;
     notifyCheckoutStarted(
       email,
-      items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+      items.map((i) => ({ productId: i.productId, quantity: i.quantity, variantId: i.exiusVariantId })),
     );
   }
 
@@ -68,8 +118,8 @@ export function CheckoutContent() {
 
     try {
       const origin = window.location.origin;
-      const result = await createCheckout({
-        items: items.map((item) => ({ productId: item.productId, quantity: item.quantity })),
+      const result = await submitCheckout({
+        items: items.map((item) => ({ productId: item.productId, quantity: item.quantity, variantId: item.exiusVariantId })),
         customer: {
           name: String(form.get("name")),
           email,
@@ -79,6 +129,7 @@ export function CheckoutContent() {
           address: String(form.get("address1")),
           address2: String(form.get("address2") ?? "") || undefined,
           city: String(form.get("city")),
+          province: String(form.get("province") ?? "") || undefined,
           zip: String(form.get("postcode")),
           country: String(form.get("country")),
         },
@@ -89,6 +140,8 @@ export function CheckoutContent() {
         // reads the most recently saved order record instead.
         returnUrl: `${origin}/checkout/return`,
         cancelUrl: `${origin}/checkout/cancel`,
+        discountCode: discount?.code,
+        useWalletAmount: walletAmount > 0 ? Math.round(walletAmount * 100) / 100 : undefined,
       });
 
       // Remembered locally so Order History / the return page can look
@@ -111,6 +164,11 @@ export function CheckoutContent() {
         // Full navigation, not client-side routing — this is a real
         // external domain (Whop/Stripe/PayPal's own hosted payment page).
         window.location.href = result.payment.redirectUrl;
+        return;
+      }
+      // Nothing left to pay (wallet covered it) — no gateway page exists.
+      if (result.total <= 0) {
+        window.location.href = "/checkout/return";
         return;
       }
       // Shouldn't happen for a configured gateway — defensive only.
@@ -163,8 +221,8 @@ export function CheckoutContent() {
           <div>
             <h2 className="text-sm font-bold uppercase tracking-wide text-[#8B8880]">Contact</h2>
             <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <input name="name" required placeholder="Full name" className="h-12 rounded-xl border border-black/10 px-4 text-sm outline-none focus:border-primary" />
-              <input name="email" type="email" required placeholder="Email" onBlur={handleEmailBlur} className="h-12 rounded-xl border border-black/10 px-4 text-sm outline-none focus:border-primary" />
+              <input name="name" required defaultValue={customer?.name} placeholder="Full name" className="h-12 rounded-xl border border-black/10 px-4 text-sm outline-none focus:border-primary" />
+              <input name="email" type="email" required defaultValue={customer?.email} placeholder="Email" onBlur={handleEmailBlur} className="h-12 rounded-xl border border-black/10 px-4 text-sm outline-none focus:border-primary" />
               <input name="phone" required placeholder="Phone" className="h-12 rounded-xl border border-black/10 px-4 text-sm outline-none focus:border-primary sm:col-span-2" />
             </div>
           </div>
@@ -175,6 +233,7 @@ export function CheckoutContent() {
               <input name="address1" required placeholder="Address line 1" className="h-12 rounded-xl border border-black/10 px-4 text-sm outline-none focus:border-primary sm:col-span-2" />
               <input name="address2" placeholder="Address line 2 (optional)" className="h-12 rounded-xl border border-black/10 px-4 text-sm outline-none focus:border-primary sm:col-span-2" />
               <input name="city" required placeholder="City" className="h-12 rounded-xl border border-black/10 px-4 text-sm outline-none focus:border-primary" />
+              <input name="province" placeholder="State / Province (optional)" className="h-12 rounded-xl border border-black/10 px-4 text-sm outline-none focus:border-primary" />
               <input name="postcode" required placeholder="Postcode" className="h-12 rounded-xl border border-black/10 px-4 text-sm outline-none focus:border-primary" />
               <input name="country" required placeholder="Country" className="h-12 rounded-xl border border-black/10 px-4 text-sm outline-none focus:border-primary sm:col-span-2" />
             </div>
@@ -187,7 +246,7 @@ export function CheckoutContent() {
             disabled={status === "loading"}
             className="h-12 rounded-xl bg-action text-sm font-bold text-action-ink transition hover:brightness-95 disabled:opacity-60"
           >
-            {status === "loading" ? "Placing order..." : `Place Order — ${price(subtotal)}`}
+            {status === "loading" ? "Placing order..." : `Place Order — ${price(total)}`}
           </button>
         </form>
 
@@ -195,7 +254,7 @@ export function CheckoutContent() {
           <h2 className="text-sm font-bold uppercase tracking-wide text-[#8B8880]">Order Summary</h2>
           <div className="mt-3 flex flex-col gap-2">
             {items.map((item) => (
-              <div key={item.productId} className="flex justify-between text-sm">
+              <div key={`${item.productId}-${item.variantId ?? "base"}`} className="flex justify-between text-sm">
                 <span className="text-[#4A4844]">
                   {item.name} <span className="text-[#8B8880]">×{item.quantity}</span>
                 </span>
@@ -203,9 +262,72 @@ export function CheckoutContent() {
               </div>
             ))}
           </div>
-          <div className="mt-4 flex justify-between border-t border-black/10 pt-4">
-            <span className="text-sm font-bold text-[#16161A]">Subtotal</span>
-            <span className="text-base font-extrabold text-primary">{price(subtotal)}</span>
+          <div className="mt-4 flex flex-col gap-2 border-t border-black/10 pt-4">
+            <div className="flex gap-2">
+              <input
+                value={discountInput}
+                onChange={(e) => setDiscountInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    applyDiscount();
+                  }
+                }}
+                placeholder="Discount code"
+                className="h-10 min-w-0 flex-1 rounded-xl border border-black/10 px-3 text-sm uppercase outline-none focus:border-primary"
+              />
+              <button
+                type="button"
+                onClick={applyDiscount}
+                disabled={discountStatus.kind === "loading" || !discountInput.trim()}
+                className="h-10 rounded-xl border border-black/10 px-4 text-sm font-bold text-[#16161A] hover:bg-[#F6F5F3] disabled:opacity-50"
+              >
+                {discountStatus.kind === "loading" ? "..." : "Apply"}
+              </button>
+            </div>
+            {discountStatus.kind === "error" && <p className="text-xs font-bold text-red-600">{discountStatus.message}</p>}
+
+            {walletUsable && (
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-[#4A4844]">
+                <input type="checkbox" checked={useWallet} onChange={(e) => setUseWallet(e.target.checked)} />
+                Use wallet balance ({formatCurrency(wallet.balance, wallet.currency)})
+              </label>
+            )}
+          </div>
+
+          <div className="mt-4 flex flex-col gap-1.5 border-t border-black/10 pt-4 text-sm">
+            <div className="flex justify-between">
+              <span className="text-[#4A4844]">Subtotal</span>
+              <span className="font-bold text-[#16161A]">{price(subtotal)}</span>
+            </div>
+            {discount && (
+              <div className="flex justify-between">
+                <span className="text-[#4A4844]">
+                  Discount ({discount.code}){" "}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDiscount(null);
+                      setDiscountInput("");
+                    }}
+                    className="text-xs font-bold text-primary hover:underline"
+                  >
+                    Remove
+                  </button>
+                </span>
+                <span className="font-bold text-status">-{price(discountAmount)}</span>
+              </div>
+            )}
+            {walletAmount > 0 && (
+              <div className="flex justify-between">
+                <span className="text-[#4A4844]">Wallet</span>
+                <span className="font-bold text-status">-{price(walletAmount)}</span>
+              </div>
+            )}
+            <div className="mt-1 flex justify-between">
+              <span className="font-bold text-[#16161A]">Total</span>
+              <span className="text-base font-extrabold text-primary">{price(total)}</span>
+            </div>
           </div>
         </div>
       </div>

@@ -33,7 +33,7 @@ export function ChangePasswordForm() {
     setCurrentPassword("");
     setNewPassword("");
     setConfirmPassword("");
-    setStatus({ kind: "success", message: "Password changed." });
+    setStatus({ kind: "success", message: "Password changed. Other devices have been signed out." });
   }
 
   return (

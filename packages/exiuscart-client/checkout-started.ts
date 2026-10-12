@@ -3,6 +3,7 @@ import { storeUrl } from "./config";
 export interface CheckoutStartedItem {
   productId: string;
   quantity: number;
+  variantId?: string;
 }
 
 // ExiusCart's real Abandoned Cart recovery endpoint — fires once, the
@@ -16,7 +17,11 @@ export async function notifyCheckoutStarted(email: string, items: CheckoutStarte
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         email,
-        items: items.map((i) => ({ product_id: Number(i.productId), quantity: i.quantity })),
+        items: items.map((i) => ({
+          product_id: Number(i.productId),
+          quantity: i.quantity,
+          variant_id: i.variantId ? Number(i.variantId) : undefined,
+        })),
       }),
       keepalive: true,
     });

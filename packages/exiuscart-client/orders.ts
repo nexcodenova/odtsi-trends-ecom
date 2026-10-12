@@ -1,5 +1,5 @@
 import { storeUrl } from "./config";
-import type { CheckoutPayload, CheckoutResult, Order } from "./types";
+import type { CheckoutPayload, CheckoutResult, DiscountPreview, Order } from "./types";
 
 // ExiusCart's real /orders/{order_number} response — confirmed against
 // its code 2026-10-01. No currency field (see types.ts's note on Order.currency).
@@ -50,9 +50,14 @@ async function extractErrorMessage(res: Response, fallback: string): Promise<str
 // Creates a real pending order and a real payment-session in one call.
 // returnUrl/cancelUrl are required — every real gateway ExiusCart's
 // storefront checkout supports (Stripe/Whop/PayPal) 422s without them.
-export async function createCheckout(payload: CheckoutPayload): Promise<CheckoutResult> {
+// token is the logged-in shopper's — only needed to spend wallet balance.
+export async function createCheckout(payload: CheckoutPayload, token?: string): Promise<CheckoutResult> {
   const body = {
-    items: payload.items.map((item) => ({ product_id: Number(item.productId), quantity: item.quantity })),
+    items: payload.items.map((item) => ({
+      product_id: Number(item.productId),
+      quantity: item.quantity,
+      variant_id: item.variantId ? Number(item.variantId) : undefined,
+    })),
     name: payload.customer.name,
     email: payload.customer.email,
     phone: payload.customer.phone,
@@ -70,23 +75,27 @@ export async function createCheckout(payload: CheckoutPayload): Promise<Checkout
     },
     return_url: payload.returnUrl,
     cancel_url: payload.cancelUrl,
+    discount_code: payload.discountCode || undefined,
+    use_wallet_amount: payload.useWalletAmount && payload.useWalletAmount > 0 ? payload.useWalletAmount : undefined,
   };
 
   const res = await fetch(storeUrl("/checkout"), {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
     body: JSON.stringify(body),
   });
   if (!res.ok) throw new Error(await extractErrorMessage(res, `Checkout failed: ${res.status}`));
 
-  const raw: { order_number: string; total: number; payment: RawPayment } = await res.json();
+  // payment can be absent when nothing is left to pay (e.g. wallet
+  // balance covered the whole order) — there's no gateway session then.
+  const raw: { order_number: string; total: number; payment?: RawPayment | null } = await res.json();
   return {
     orderNumber: raw.order_number,
     total: raw.total,
     payment: {
-      gateway: raw.payment.gateway,
-      orderId: raw.payment.order_id,
-      redirectUrl: raw.payment.redirect_url ?? undefined,
+      gateway: raw.payment?.gateway ?? "none",
+      orderId: raw.payment?.order_id ?? raw.order_number,
+      redirectUrl: raw.payment?.redirect_url ?? undefined,
     },
   };
 }
@@ -98,4 +107,19 @@ export async function lookupOrder(orderNumber: string, email: string): Promise<O
   if (!res.ok) throw new Error(`Order not found: ${res.status}`);
   const raw: RawOrder = await res.json();
   return mapOrder(raw);
+}
+
+// Same validation /checkout runs, without creating an order — lets the
+// cart show "code applied" before the shopper submits.
+export async function previewDiscount(code: string, subtotal: number): Promise<DiscountPreview> {
+  const res = await fetch(storeUrl("/discounts/preview"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code, subtotal }),
+  });
+  if (!res.ok) throw new Error(await extractErrorMessage(res, "That code couldn't be applied."));
+  const raw = await res.json();
+  const discount = Number(raw.discount ?? raw.discount_amount ?? 0);
+  const total = raw.total ?? raw.new_total ?? null;
+  return { code: raw.code ?? code, discount, total: total === null ? null : Number(total) };
 }

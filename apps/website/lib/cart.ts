@@ -27,6 +27,10 @@ export interface CartItem {
   // line and silently keep whichever price was recorded first, mispricing
   // the rest of the quantity. Undefined = the plain single-unit variant.
   variantId?: string;
+  // ExiusCart's own numeric id for a size/color variant — sent to checkout
+  // so the order is priced and stock-decremented against the variant the
+  // shopper actually picked. Unset for pack tiers and plain products.
+  exiusVariantId?: string;
 }
 
 const CART_KEY = "odtsi_cart";

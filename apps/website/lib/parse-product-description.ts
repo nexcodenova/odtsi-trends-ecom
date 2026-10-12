@@ -14,7 +14,7 @@ export interface ParsedDescription {
 // hostile user input, so stripping the genuinely dangerous bits (script/
 // style/iframe/object/embed tags, inline event handlers, javascript: URLs)
 // covers what actually matters without a fragile native dependency.
-function sanitize(html: string): string {
+export function sanitizeHtml(html: string): string {
   return html
     .replace(/<(script|style|iframe|object|embed|link|meta)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, "")
     .replace(/<(script|style|iframe|object|embed|link|meta)\b[^>]*\/?>/gi, "")
@@ -38,7 +38,7 @@ function splitIntoBlocks(html: string): string[] {
 // between text blocks itself instead of depending on however the supplier's
 // markup wrapped them.
 export function parseProductDescription(html: string): ParsedDescription {
-  const clean = sanitize(html);
+  const clean = sanitizeHtml(html);
 
   const images: { src: string; alt: string }[] = [];
   const withoutImages = clean.replace(/<img\b[^>]*>/gi, (imgTag) => {

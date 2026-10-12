@@ -3,14 +3,17 @@ import { ShopGrid } from "@/components/shop/shop-grid";
 import { TrendingHero } from "@/components/collection/trending-hero";
 import { MIN_VIEWS_FOR_POPULAR } from "@/lib/product-thresholds";
 
-// Same real-view-count signal as the homepage's Most Viewed row — ranked
-// by genuine traffic, not a fabricated "trending" score.
+// Products the seller flagged as trending in ExiusCart, then anything with
+// the same real-view-count signal as the homepage's Most Viewed row —
+// ranked by genuine traffic, not a fabricated "trending" score.
 async function loadTrending(): Promise<Product[]> {
   try {
-    const products = await getProducts();
-    return products
-      .filter((p) => p.viewCount !== null && p.viewCount > MIN_VIEWS_FOR_POPULAR)
+    const [flagged, products] = await Promise.all([getProducts({ trending: true }), getProducts()]);
+    const flaggedIds = new Set(flagged.map((p) => p.id));
+    const popular = products
+      .filter((p) => !flaggedIds.has(p.id) && p.viewCount !== null && p.viewCount > MIN_VIEWS_FOR_POPULAR)
       .sort((a, b) => (b.viewCount ?? 0) - (a.viewCount ?? 0));
+    return [...flagged, ...popular];
   } catch (err) {
     console.error("[collection-trending]", err);
     return [];
@@ -19,7 +22,7 @@ async function loadTrending(): Promise<Product[]> {
 
 export default async function TrendingPage() {
   const products = await loadTrending();
-  const topViewCount = products[0]?.viewCount ?? 0;
+  const topViewCount = Math.max(0, ...products.map((p) => p.viewCount ?? 0));
 
   return (
     <div className="mx-auto max-w-[1400px] px-4 py-8 sm:px-5">

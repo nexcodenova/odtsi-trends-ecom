@@ -104,6 +104,7 @@ export function AddToCartSection({ product, cashbackLabel }: { product: Product;
       currency: product.currency,
       imageUrl,
       variantId: selectedVariant?.sku,
+      exiusVariantId: selectedVariant?.id,
     };
   }
 

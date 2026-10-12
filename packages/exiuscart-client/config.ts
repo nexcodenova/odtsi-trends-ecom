@@ -10,6 +10,10 @@ export const EXIUSCART_BASE_URL =
 
 export const SHOP_SLUG = process.env.NEXT_PUBLIC_SHOP_SLUG ?? "odtsi";
 
+// Numeric shop ID — only the popups/signup-forms endpoints use it instead
+// of the slug. Unset means those features stay off.
+export const SHOP_ID = process.env.NEXT_PUBLIC_SHOP_ID ?? "";
+
 export function storeUrl(path: string) {
   return `${EXIUSCART_BASE_URL}/public/store/${SHOP_SLUG}${path}`;
 }

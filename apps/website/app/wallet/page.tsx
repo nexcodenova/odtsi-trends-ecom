@@ -2,31 +2,36 @@ import Link from "next/link";
 import { Wallet as WalletIcon, ShoppingBag, Landmark, PiggyBank } from "lucide-react";
 import {
   getWallet,
+  getWalletSettings,
   getPayoutMethod,
   getPayoutRequests,
   type Wallet,
+  type WalletSettings,
   type PayoutRequest,
 } from "@odtsi/exiuscart-client";
 import { getSession } from "@/lib/session";
 import { formatCurrency } from "@odtsi/utils";
 import { LogoutButton } from "@/components/account/logout-button";
 import { getWalletCashbackLabel } from "@/lib/wallet-rate";
-import { MIN_REDEEM_AMOUNT } from "@/lib/wallet-limits";
 import { WithdrawForm } from "@/components/wallet/withdraw-form";
+import { CancelWithdrawalButton } from "@/components/wallet/cancel-withdrawal-button";
 
 // Real cash, not points — every dollar credited to a wallet is a dollar
-// that came off a real order. PayPal withdrawals go to ExiusCart as payout
-// requests the seller pays out; spending it at checkout still has no
-// ExiusCart endpoint, so that path stays marked as coming soon.
+// that came off a real order. It can be spent at checkout, or withdrawn as
+// a payout request the seller pays out (when the store allows it). The
+// minimum and whether withdrawals are on come from the seller's settings.
 
 const PAYOUT_STATUS_STYLE: Record<PayoutRequest["status"], string> = {
   pending: "bg-[#FEF3C7] text-[#92400E]",
   approved: "bg-primary-light text-primary",
   paid: "bg-[#DCFCE7] text-[#166534]",
   rejected: "bg-[#FEE2E2] text-[#991B1B]",
+  cancelled: "bg-[#F6F5F3] text-[#8B8880]",
 };
 
-function HowItWorks({ currency }: { currency: string }) {
+function HowItWorks({ currency, withdrawals }: { currency: string; withdrawals: WalletSettings["withdrawals"] | null }) {
+  const canWithdraw = withdrawals?.enabled ?? false;
+  const minWithdraw = withdrawals?.minAmount ?? 0;
   return (
     <div className="w-full rounded-2xl border border-black/10 bg-white p-6 text-left sm:p-7">
       <p className="text-xs font-bold uppercase tracking-wide text-[#8B8880]">How your wallet works</p>
@@ -54,7 +59,7 @@ function HowItWorks({ currency }: { currency: string }) {
           <div>
             <p className="text-sm font-bold text-[#16161A]">Spend it</p>
             <p className="mt-1 text-xs leading-relaxed text-[#716D67]">
-              Put it toward your next order at checkout, once you&apos;ve reached {formatCurrency(MIN_REDEEM_AMOUNT, currency)}.
+              Put it toward your next order at checkout — just sign in before you pay.
             </p>
           </div>
         </div>
@@ -64,21 +69,25 @@ function HowItWorks({ currency }: { currency: string }) {
           </span>
           <div>
             <p className="text-sm font-bold text-[#16161A]">Withdraw it</p>
-            <p className="mt-1 text-xs leading-relaxed text-[#716D67]">
-              Take it out as cash to your own PayPal account once you&apos;ve reached{" "}
-              {formatCurrency(MIN_REDEEM_AMOUNT, currency)} — save your PayPal details from your{" "}
-              <Link href="/account" className="font-bold text-primary underline-offset-2 hover:underline">
-                account page
-              </Link>
-              .
-            </p>
+            {canWithdraw ? (
+              <p className="mt-1 text-xs leading-relaxed text-[#716D67]">
+                Take it out as cash
+                {minWithdraw > 0 && <> once you&apos;ve reached {formatCurrency(minWithdraw, currency)}</>} — add your
+                payout details on your{" "}
+                <Link href="/account" className="font-bold text-primary underline-offset-2 hover:underline">
+                  account page
+                </Link>
+                .
+              </p>
+            ) : (
+              <p className="mt-1 text-xs leading-relaxed text-[#716D67]">
+                Cash withdrawals aren&apos;t open right now — your balance is still yours to spend at checkout.
+              </p>
+            )}
           </div>
         </div>
       </div>
 
-      <p className="mt-5 rounded-xl bg-[#F6F5F3] px-4 py-3 text-[11px] font-semibold uppercase tracking-wide text-[#8B8880]">
-        Spending at checkout — coming soon
-      </p>
     </div>
   );
 }
@@ -96,16 +105,26 @@ async function loadWallet(token: string): Promise<Wallet | null> {
   }
 }
 
-// Payout endpoints aren't live on ExiusCart yet — each falls back on its
-// own so a missing one never hides the real balance above it.
-async function loadPayoutInfo(token: string): Promise<{ paypalEmail: string | null; requests: PayoutRequest[] }> {
+// Each falls back on its own so a failing one never hides the real
+// balance above it.
+async function loadPayoutInfo(token: string): Promise<{ destination: string | null; requests: PayoutRequest[] }> {
   const [method, requests] = await Promise.allSettled([getPayoutMethod(token), getPayoutRequests(token)]);
   if (method.status === "rejected") console.error("Failed to load payout method:", method.reason);
   if (requests.status === "rejected") console.error("Failed to load payout requests:", requests.reason);
+  const current = method.status === "fulfilled" ? method.value.current : null;
   return {
-    paypalEmail: method.status === "fulfilled" ? method.value.paypalEmail : null,
+    destination: current ? `${current.methodLabel} · ${current.account}` : null,
     requests: requests.status === "fulfilled" ? requests.value : [],
   };
+}
+
+async function loadSettings(): Promise<WalletSettings | null> {
+  try {
+    return await getWalletSettings();
+  } catch (err) {
+    console.error("Failed to load wallet settings:", err);
+    return null;
+  }
 }
 
 export default async function WalletPage() {
@@ -150,13 +169,19 @@ export default async function WalletPage() {
         </div>
 
         <div className="sm:col-span-2">
-          <HowItWorks currency="USD" />
+          <HowItWorks currency="USD" withdrawals={null} />
         </div>
       </div>
     );
   }
 
-  const [wallet, payout] = await Promise.all([loadWallet(session.token), loadPayoutInfo(session.token)]);
+  const [wallet, payout, settings] = await Promise.all([
+    loadWallet(session.token),
+    loadPayoutInfo(session.token),
+    loadSettings(),
+  ]);
+  const withdrawals = settings?.withdrawals ?? null;
+  const withdrawalsOpen = (wallet?.withdrawalsEnabled ?? false) && (withdrawals?.enabled ?? false);
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-10 sm:py-14 lg:px-8">
@@ -187,19 +212,23 @@ export default async function WalletPage() {
                 Couldn&apos;t load your balance right now — try refreshing in a moment.
               </p>
             )}
-            {wallet && wallet.balance < MIN_REDEEM_AMOUNT && (
+            {wallet && wallet.onHold > 0 && (
               <p className="mt-2 text-xs text-[#8B8880]">
-                {formatCurrency(MIN_REDEEM_AMOUNT - wallet.balance, wallet.currency)} more to unlock spending or
-                withdrawing it.
+                {formatCurrency(wallet.onHold, wallet.currency)} on hold for a pending withdrawal.
               </p>
             )}
           </div>
 
-          {wallet && (
+          {wallet && withdrawalsOpen && (
             <div className="rounded-2xl border border-black/10 bg-white p-6">
-              <p className="text-xs font-bold uppercase tracking-wide text-[#8B8880]">Withdraw to PayPal</p>
+              <p className="text-xs font-bold uppercase tracking-wide text-[#8B8880]">Withdraw</p>
               <div className="mt-3">
-                <WithdrawForm balance={wallet.balance} currency={wallet.currency} paypalEmail={payout.paypalEmail} />
+                <WithdrawForm
+                  balance={wallet.balance}
+                  currency={wallet.currency}
+                  minAmount={withdrawals?.minAmount ?? 0}
+                  destination={payout.destination}
+                />
               </div>
             </div>
           )}
@@ -209,16 +238,22 @@ export default async function WalletPage() {
               <p className="text-xs font-bold uppercase tracking-wide text-[#8B8880]">Withdrawals</p>
               <div className="mt-3 flex flex-col gap-2">
                 {payout.requests.map((r) => (
-                  <div key={r.id} className="flex items-center justify-between rounded-xl border border-black/10 px-4 py-3">
-                    <div>
+                  <div key={r.id} className="flex items-center justify-between gap-3 rounded-xl border border-black/10 px-4 py-3">
+                    <div className="min-w-0">
                       <p className="text-sm font-semibold text-[#16161A]">{formatCurrency(r.amount, r.currency)}</p>
-                      <p className="text-xs text-[#8B8880]">
-                        {new Date(r.createdAt).toLocaleDateString()} · {r.paypalEmail}
+                      <p className="truncate text-xs text-[#8B8880]">
+                        {[r.createdAt && new Date(r.createdAt).toLocaleDateString(), r.destination].filter(Boolean).join(" · ")}
                       </p>
+                      {r.status === "rejected" && r.rejectReason && (
+                        <p className="mt-1 text-xs text-[#991B1B]">{r.rejectReason}</p>
+                      )}
                     </div>
-                    <span className={`rounded-full px-3 py-1 text-xs font-bold capitalize ${PAYOUT_STATUS_STYLE[r.status]}`}>
-                      {r.status}
-                    </span>
+                    <div className="flex shrink-0 flex-col items-end gap-1.5">
+                      <span className={`rounded-full px-3 py-1 text-xs font-bold capitalize ${PAYOUT_STATUS_STYLE[r.status] ?? ""}`}>
+                        {r.status}
+                      </span>
+                      {r.status === "pending" && <CancelWithdrawalButton id={r.id} />}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -250,7 +285,7 @@ export default async function WalletPage() {
           <LogoutButton />
         </div>
 
-        <HowItWorks currency={wallet?.currency ?? "USD"} />
+        <HowItWorks currency={wallet?.currency ?? "USD"} withdrawals={withdrawals} />
       </div>
     </div>
   );

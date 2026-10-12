@@ -97,6 +97,10 @@ interface RawProduct {
   // highlights — null/0 until a product actually has reviews.
   avg_rating?: number | null;
   review_count?: number;
+  shipping_steps?: string[];
+  seo_title?: string | null;
+  meta_description?: string | null;
+  seo_keywords?: string[];
 }
 
 function mapFaq(raw: RawFaq[] | undefined): ProductFaq[] {
@@ -198,6 +202,10 @@ function mapProduct(raw: RawProduct, categorySlugById: Map<string, string>): Pro
     faq: mapFaq(raw.faq),
     shippingNote: raw.shipping_note ?? null,
     tags: raw.tags ?? [],
+    shippingSteps: raw.shipping_steps ?? [],
+    seoTitle: raw.seo_title || null,
+    metaDescription: raw.meta_description || null,
+    seoKeywords: raw.seo_keywords ?? [],
   };
 }
 
@@ -216,10 +224,19 @@ async function loadCategorySlugMap(): Promise<Map<string, string>> {
   }
 }
 
-export async function getProducts(params?: { category?: string; collection?: string; search?: string }): Promise<Product[]> {
+export async function getProducts(params?: {
+  category?: string;
+  collection?: string;
+  search?: string;
+  // Seller-flagged in ExiusCart — real filters on its side, not a sort here.
+  featured?: boolean;
+  trending?: boolean;
+}): Promise<Product[]> {
   const query = new URLSearchParams();
   if (params?.category) query.set("category", params.category);
   if (params?.collection) query.set("collection", params.collection);
+  if (params?.featured) query.set("featured", "true");
+  if (params?.trending) query.set("trending", "true");
   // Real server-side search — confirmed live 2026-09-03 that ExiusCart's
   // /products endpoint actually filters on this param (not just ignoring
   // it), so search results are real matches, not a client-side guess.

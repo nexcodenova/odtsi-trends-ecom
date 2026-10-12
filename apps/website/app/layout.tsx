@@ -5,6 +5,7 @@ import { BottomNav } from "@/components/layout/bottom-nav";
 import { Footer } from "@/components/layout/footer";
 import { AddedNotification } from "@/components/shared/added-notification";
 import { TrackingScripts } from "@/components/shared/tracking-scripts";
+import { SitePopups } from "@/components/marketing/site-popups";
 import { getCategories, type Category } from "@odtsi/exiuscart-client";
 import "./globals.css";
 
@@ -51,6 +52,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <AddedNotification />
         <BottomNav categories={categories} />
         <TrackingScripts />
+        <SitePopups />
       </body>
     </html>
   );

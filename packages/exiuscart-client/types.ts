@@ -153,6 +153,60 @@ export interface Product {
   // product but never mapped or shown anywhere. Empty array, not null,
   // when a product has none.
   tags: string[];
+  // Ordered shipping journey (e.g. "Ordered → Dispatched → Delivered"),
+  // rendered as an arrow flow. Empty means fall back to shippingNote.
+  shippingSteps: string[];
+  // Seller-set SEO. When seoTitle/metaDescription are set they're used
+  // as-is for <title>/<meta description>; seoKeywords only feed a built
+  // title/description when those are empty (never dumped as <meta keywords>).
+  seoTitle: string | null;
+  metaDescription: string | null;
+  seoKeywords: string[];
+}
+
+export interface BlogPost {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string | null;
+  // Full HTML body — only sent on the single-post endpoint, null in lists.
+  content: string | null;
+  coverImageUrl: string | null;
+  authorName: string | null;
+  tags: string[];
+  ctaText: string | null;
+  ctaUrl: string | null;
+  publishedAt: string | null;
+}
+
+export interface Popup {
+  id: string;
+  type: string;
+  title: string;
+  message: string | null;
+  buttonText: string | null;
+  buttonLink: string | null;
+  discountCode: string | null;
+  imageUrl: string | null;
+  delaySeconds: number;
+}
+
+export interface SignupFormField {
+  id: string;
+  label: string;
+  type: string;
+  required: boolean;
+  options: string[] | null;
+}
+
+export interface SignupForm {
+  id: string;
+  title: string;
+  description: string | null;
+  fields: SignupFormField[];
+  successMessage: string | null;
+  discountCode: string | null;
+  delaySeconds: number;
 }
 
 export interface ProductFaq {
@@ -163,6 +217,9 @@ export interface ProductFaq {
 export interface CartItem {
   productId: string;
   quantity: number;
+  // ExiusCart's real numeric variant id (size/color) — without it checkout
+  // prices and decrements the base product instead of the chosen variant.
+  variantId?: string;
 }
 
 export interface CheckoutPayload {
@@ -192,6 +249,17 @@ export interface CheckoutPayload {
   // redirects the browser straight to these after payment).
   returnUrl: string;
   cancelUrl: string;
+  // Validated again (and capped) by ExiusCart at checkout.
+  discountCode?: string;
+  // Logged-in shoppers only — needs the customer's token on the request.
+  // ExiusCart caps it at their real balance.
+  useWalletAmount?: number;
+}
+
+export interface DiscountPreview {
+  code: string;
+  discount: number;
+  total: number | null;
 }
 
 // What ExiusCart's real /checkout actually returns — confirmed directly

@@ -13,15 +13,15 @@ export interface WalletTransaction {
 
 export interface Wallet {
   balance: number;
+  // Reserved by pending withdrawals — not spendable, not in balance.
+  onHold: number;
   currency: string;
+  withdrawalsEnabled: boolean;
   transactions: WalletTransaction[];
 }
 
-// ExiusCart's real shape is snake_case on transactions (created_at) — this
-// endpoint is live and working (confirmed via a real signup + authenticated
-// call this session: real $0.00/no-transactions for a fresh account, which
-// is the honest correct state since no payment gateway is connected yet,
-// so no real cashback has ever been credited to anyone).
+// ExiusCart's real shape is snake_case on transactions (created_at) —
+// confirmed live 2026-10-12.
 interface RawWalletTransaction {
   amount: number;
   type: "credit" | "debit";
@@ -31,14 +31,18 @@ interface RawWalletTransaction {
 
 interface RawWallet {
   balance: number;
+  on_hold?: number;
   currency: string;
+  withdrawals_enabled?: boolean;
   transactions: RawWalletTransaction[];
 }
 
 function mapWallet(raw: RawWallet): Wallet {
   return {
     balance: raw.balance,
+    onHold: raw.on_hold ?? 0,
     currency: raw.currency,
+    withdrawalsEnabled: raw.withdrawals_enabled ?? false,
     transactions: raw.transactions.map((t) => ({
       amount: t.amount,
       type: t.type,
@@ -62,94 +66,100 @@ export async function getWallet(token: string): Promise<Wallet> {
 export interface WalletSettings {
   isEnabled: boolean;
   cashbackPercent: number;
+  withdrawals: {
+    enabled: boolean;
+    minAmount: number;
+    currency: string;
+    methods: string[];
+    // How long withdrawals pause after a payout method is changed.
+    payoutChangeHoldHours: number;
+  };
 }
 
-// No-auth, real seller-set rate — added to ExiusCart specifically so the
-// site's "X% back" copy (product pages, wallet page, signup) stops being a
-// hardcoded guess. Revalidated hourly: a real rate change shouldn't need a
-// redeploy, but it also doesn't need to be live-fresh on every request.
+// No-auth, real seller-set rate and withdrawal rules. Revalidated hourly:
+// a real change shouldn't need a redeploy, but it also doesn't need to be
+// live-fresh on every request.
 export async function getWalletSettings(): Promise<WalletSettings> {
   const res = await fetch(storeUrl("/wallet-settings"), { next: { revalidate: 3600 } });
   if (!res.ok) throw new Error(`Failed to load wallet settings: ${res.status}`);
   const raw = await res.json();
-  return { isEnabled: raw.is_enabled, cashbackPercent: raw.cashback_percent };
+  const w = raw.withdrawals ?? {};
+  return {
+    isEnabled: raw.is_enabled,
+    cashbackPercent: raw.cashback_percent,
+    withdrawals: {
+      enabled: w.enabled ?? false,
+      minAmount: w.min_amount ?? 0,
+      currency: w.currency ?? "USD",
+      methods: (w.methods ?? []).map((m: string | { key: string }) => (typeof m === "string" ? m : m.key)),
+      payoutChangeHoldHours: w.payout_change_hold_hours ?? 0,
+    },
+  };
 }
 
-export type PayoutRequestStatus = "pending" | "approved" | "paid" | "rejected";
+export type PayoutRequestStatus = "pending" | "approved" | "paid" | "rejected" | "cancelled";
 
 export interface PayoutRequest {
   id: string;
   amount: number;
   currency: string;
-  paypalEmail: string;
+  // Where it's being paid — e.g. "PayPal · jane@example.com".
+  destination: string | null;
   status: PayoutRequestStatus;
-  createdAt: string;
+  rejectReason: string | null;
+  createdAt: string | null;
 }
 
 interface RawPayoutRequest {
   id: number;
   amount: number;
   currency: string;
-  paypal_email: string;
   status: PayoutRequestStatus;
-  created_at: string;
+  reject_reason?: string | null;
+  created_at?: string | null;
+  method?: string | null;
+  method_label?: string | null;
+  account?: string | null;
+  paypal_email?: string | null;
 }
 
 function mapPayoutRequest(raw: RawPayoutRequest): PayoutRequest {
+  const account = raw.account ?? raw.paypal_email ?? null;
+  const label = raw.method_label ?? raw.method ?? null;
   return {
     id: String(raw.id),
     amount: raw.amount,
     currency: raw.currency,
-    paypalEmail: raw.paypal_email,
+    destination: account ? (label ? `${label} · ${account}` : account) : null,
     status: raw.status,
-    createdAt: raw.created_at,
+    rejectReason: raw.reject_reason ?? null,
+    createdAt: raw.created_at ?? null,
   };
 }
 
-// What a withdrawal request tells ExiusCart, so the seller's wallet page
-// in ExiusCart can show who asked, what they had, and where to send it.
-// The customer/balance fields are informational for the seller's list —
-// ExiusCart must still trust only the Bearer token for who the customer
-// is, and re-check amount <= real balance and amount >= its minimum.
-export interface PayoutRequestPayload {
-  amount: number;
-  paypalEmail: string;
-  customer: { id: string; name: string; email: string };
-  balanceAtRequest: number;
-  currency: string;
+async function extractErrorMessage(res: Response, fallback: string): Promise<string> {
+  try {
+    const body = await res.json();
+    if (typeof body?.detail === "string") return body.detail;
+    if (typeof body?.detail?.message === "string") return body.detail.message;
+  } catch {}
+  return fallback;
 }
 
-// NOT LIVE YET — POST /wallet/payout-requests → the created request
-// (status "pending"). ExiusCart should hold the amount (debit or reserve
-// it) so the same balance can't be requested twice.
-export async function requestPayout(token: string, payload: PayoutRequestPayload): Promise<PayoutRequest> {
+// POST /wallet/payout-requests { amount } → the created request. The
+// customer, currency and payout address come from the token on
+// ExiusCart's side, never the body. The amount goes on hold.
+export async function requestPayout(token: string, amount: number): Promise<PayoutRequest> {
   const res = await fetch(storeUrl("/wallet/payout-requests"), {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      amount: payload.amount,
-      paypal_email: payload.paypalEmail,
-      customer_id: payload.customer.id,
-      customer_name: payload.customer.name,
-      customer_email: payload.customer.email,
-      balance_at_request: payload.balanceAtRequest,
-      currency: payload.currency,
-    }),
+    body: JSON.stringify({ amount }),
   });
-  if (!res.ok) {
-    let message = `Withdrawal request failed: ${res.status}`;
-    try {
-      const body = await res.json();
-      if (typeof body?.detail === "string") message = body.detail;
-      else if (typeof body?.detail?.message === "string") message = body.detail.message;
-    } catch {}
-    throw new Error(message);
-  }
+  if (!res.ok) throw new Error(await extractErrorMessage(res, `Withdrawal request failed: ${res.status}`));
   return mapPayoutRequest(await res.json());
 }
 
-// NOT LIVE YET — GET /wallet/payout-requests → this customer's requests,
-// newest first, so the wallet page can show pending/paid status.
+// GET /wallet/payout-requests → this customer's requests, newest first.
 export async function getPayoutRequests(token: string): Promise<PayoutRequest[]> {
   const res = await fetch(storeUrl("/wallet/payout-requests"), {
     headers: { Authorization: `Bearer ${token}` },
@@ -158,4 +168,13 @@ export async function getPayoutRequests(token: string): Promise<PayoutRequest[]>
   if (!res.ok) throw new Error(`Failed to load payout requests: ${res.status}`);
   const raw: RawPayoutRequest[] = await res.json();
   return raw.map(mapPayoutRequest);
+}
+
+// Only while still pending — the amount returns to the wallet.
+export async function cancelPayoutRequest(token: string, id: string): Promise<void> {
+  const res = await fetch(storeUrl(`/wallet/payout-requests/${encodeURIComponent(id)}/cancel`), {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error(await extractErrorMessage(res, `Couldn't cancel withdrawal: ${res.status}`));
 }
