@@ -8,7 +8,10 @@ import { storeUrl } from "./config";
 // platform. It was real but undocumented on ExiusCart's side — the
 // dashboard's traffic chart was empty simply because nothing had ever
 // called it, not because tracking itself was broken or unbuilt.
+// "page" (added 2026-10-15) counts every non-product page toward Website
+// Traffic. A product page sends "view" instead — never both on one load.
 type TrackEvent =
+  | { event: "page"; path: string }
   | { event: "view"; productId: string }
   | { event: "add_to_cart"; productId: string }
   | { event: "search"; query: string };
@@ -19,9 +22,11 @@ type TrackEvent =
 export async function trackStorefrontEvent(event: TrackEvent): Promise<void> {
   try {
     const body =
-      event.event === "search"
-        ? { event: "search", query: event.query }
-        : { event: event.event, product_id: Number(event.productId) };
+      event.event === "page"
+        ? { event: "page", path: event.path }
+        : event.event === "search"
+          ? { event: "search", query: event.query }
+          : { event: event.event, product_id: Number(event.productId) };
     await fetch(storeUrl("/track"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
