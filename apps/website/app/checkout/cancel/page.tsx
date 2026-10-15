@@ -5,7 +5,8 @@ import { XCircle } from "lucide-react";
 // The order ExiusCart created still exists (as "pending" — nothing
 // deletes it), but nothing here claims it was cancelled server-side,
 // since this page can't know that for certain, only that the shopper
-// didn't complete the gateway's own payment page.
+// didn't complete the gateway's own payment page. The cart (or Buy Now
+// item) is still there — checkout only clears it after confirmed payment.
 export default function CheckoutCancelPage() {
   return (
     <div className="mx-auto flex max-w-md flex-col items-center px-5 py-16 text-center sm:py-24">
@@ -17,10 +18,10 @@ export default function CheckoutCancelPage() {
         No charge was made. If this was a mistake, you can place your order again.
       </p>
       <Link
-        href="/cart"
+        href="/checkout"
         className="mt-6 rounded-xl bg-action px-6 py-3 text-sm font-bold text-action-ink transition hover:brightness-95"
       >
-        Back to Cart
+        Back to Checkout
       </Link>
     </div>
   );

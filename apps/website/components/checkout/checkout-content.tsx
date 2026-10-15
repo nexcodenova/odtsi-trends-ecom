@@ -7,8 +7,8 @@ import { formatCurrency } from "@odtsi/utils";
 import { notifyCheckoutStarted, previewDiscount, type CheckoutPayload, type CheckoutResult } from "@odtsi/exiuscart-client";
 import { saveOrderRecord } from "@/lib/order-history";
 import { getBuyNowItem, clearBuyNowItem } from "@/lib/buy-now";
-import { cartSubtotal, clearCart, type CartItem } from "@/lib/cart";
-import { trackInitiateCheckout, trackPurchase } from "@/lib/tracking";
+import { cartSubtotal, type CartItem } from "@/lib/cart";
+import { trackInitiateCheckout } from "@/lib/tracking";
 
 // Goes through this site's own /api/checkout so a signed-in shopper's
 // token (needed for wallet spending) never reaches client JS.
@@ -146,19 +146,20 @@ export function CheckoutContent({
 
       // Remembered locally so Order History / the return page can look
       // this up for real — ExiusCart has no account-wide order list yet.
-      saveOrderRecord({ orderNumber: result.orderNumber, email });
-      // The real order total ExiusCart just confirmed, not the pre-submit
-      // client-side subtotal — matches what actually got recorded even if
-      // a wallet discount or similar adjusted it server-side. Currency
-      // isn't in ExiusCart's response (see types.ts) — subtotalCurrency
-      // is the real currency this cart was already priced in.
-      trackPurchase(result.orderNumber, result.total, subtotalCurrency);
-      clearBuyNowItem();
-      // A real order now exists in ExiusCart for this cart's contents,
-      // regardless of whether payment completes — same as any real
-      // e-commerce checkout, the cart clears on submission, not on
-      // confirmed payment.
-      if (!buyNowItem) clearCart();
+      // The order exists in ExiusCart now but is still unpaid, so the
+      // Purchase pixel and the cart/Buy Now clear wait for the return
+      // page to see it confirmed. The total is ExiusCart's confirmed one,
+      // not the client-side subtotal; currency isn't in its response, so
+      // it's the currency this cart was already priced in.
+      saveOrderRecord({
+        orderNumber: result.orderNumber,
+        email,
+        awaitingPayment: {
+          total: result.total,
+          currency: subtotalCurrency,
+          source: buyNowItem ? "buy-now" : "cart",
+        },
+      });
 
       if (result.payment.redirectUrl) {
         // Full navigation, not client-side routing — this is a real

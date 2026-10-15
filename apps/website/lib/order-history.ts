@@ -9,6 +9,15 @@ export interface OrderRecord {
   orderNumber: string;
   email: string;
   placedAt: string;
+  // Set at submit, before the shopper leaves for the payment page, and
+  // removed once the return page sees the order confirmed. The Purchase
+  // pixel and the cart clear both wait for that, so a shopper who backs
+  // out of paying keeps their cart and isn't counted as a sale.
+  awaitingPayment?: {
+    total: number;
+    currency: string;
+    source: "cart" | "buy-now";
+  };
 }
 
 const HISTORY_KEY = "odtsi_order_history";
@@ -28,4 +37,11 @@ export function saveOrderRecord(record: Omit<OrderRecord, "placedAt">) {
   const withoutDupe = records.filter((r) => r.orderNumber !== record.orderNumber);
   withoutDupe.unshift({ ...record, placedAt: new Date().toISOString() });
   localStorage.setItem(HISTORY_KEY, JSON.stringify(withoutDupe));
+}
+
+export function markOrderPaid(orderNumber: string) {
+  const records = getOrderRecords().map((r) =>
+    r.orderNumber === orderNumber ? { ...r, awaitingPayment: undefined } : r,
+  );
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(records));
 }

@@ -2,9 +2,12 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, Clock, RefreshCw } from "lucide-react";
+import { CheckCircle2, Clock, RefreshCw, XCircle } from "lucide-react";
 import { lookupOrder, type Order } from "@odtsi/exiuscart-client";
-import { getOrderRecords } from "@/lib/order-history";
+import { getOrderRecords, markOrderPaid } from "@/lib/order-history";
+import { clearCart } from "@/lib/cart";
+import { clearBuyNowItem } from "@/lib/buy-now";
+import { trackPurchase } from "@/lib/tracking";
 
 // Where every real gateway (Stripe/Whop/PayPal) sends the shopper back
 // after paying. We don't know the real order number at the point we had
@@ -18,6 +21,25 @@ import { getOrderRecords } from "@/lib/order-history";
 // after the shopper lands back here, not necessarily before. Honest
 // "still confirming" state while that catches up, with a real manual
 // re-check rather than silently showing a stale status.
+//
+// Only once it's confirmed do we fire the Purchase pixel and empty the
+// cart (or Buy Now item) — checkout leaves both alone, since the shopper
+// may still back out on the payment page. awaitingPayment is removed
+// right after, so a reload or a later "Check again" never repeats them.
+function completePaidOrder(orderNumber: string) {
+  const record = getOrderRecords().find((r) => r.orderNumber === orderNumber);
+  const pending = record?.awaitingPayment;
+  if (!pending) return;
+  trackPurchase(orderNumber, pending.total, pending.currency);
+  if (pending.source === "buy-now") clearBuyNowItem();
+  else clearCart();
+  markOrderPaid(orderNumber);
+}
+
+function isPaid(order: Order | null): boolean {
+  return !!order && order.status !== "pending" && order.status !== "cancelled";
+}
+
 export default function CheckoutReturnPage() {
   const [order, setOrder] = useState<Order | null>(null);
   const [email, setEmail] = useState<string | null>(null);
@@ -27,6 +49,7 @@ export default function CheckoutReturnPage() {
     setStatus("loading");
     try {
       const result = await lookupOrder(orderNumber, email);
+      if (isPaid(result)) completePaidOrder(result.orderNumber);
       setOrder(result);
       setStatus("found");
     } catch {
@@ -61,7 +84,18 @@ export default function CheckoutReturnPage() {
 
   return (
     <div className="mx-auto flex max-w-md flex-col items-center px-5 py-16 text-center sm:py-24">
-      {status === "found" && order?.status !== "pending" ? (
+      {status === "found" && order?.status === "cancelled" ? (
+        <>
+          <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#FEE2E2] text-[#B9412E]">
+            <XCircle size={28} />
+          </span>
+          <h1 className="mt-5 text-2xl font-extrabold text-[#16161A] sm:text-3xl">Order cancelled</h1>
+          <p className="mt-3 text-sm leading-relaxed text-[#716D67]">
+            Order <span className="font-bold text-[#16161A]">{order.orderNumber}</span> has been cancelled. If you
+            were charged, the refund goes back to your original payment method.
+          </p>
+        </>
+      ) : status === "found" && isPaid(order) ? (
         <>
           <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-status/10 text-status">
             <CheckCircle2 size={28} />
