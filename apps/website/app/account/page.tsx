@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+import { PRIVATE_PAGE } from "@/lib/site";
 import Link from "next/link";
 import { User, Wallet as WalletIcon, ChevronRight } from "lucide-react";
 import { getPayoutMethod, getProfile, type PayoutMethod, type Profile } from "@odtsi/exiuscart-client";
@@ -9,6 +11,8 @@ import { EditProfileForm } from "@/components/account/edit-profile-form";
 import { ChangePasswordForm } from "@/components/account/change-password-form";
 import { PayoutMethodForm } from "@/components/account/payout-method-form";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+
+export const metadata: Metadata = PRIVATE_PAGE;
 
 // Reads the session cookie per-request — never worth prerendering, and
 // forcing this explicitly avoids relying on Next's own dynamic-API

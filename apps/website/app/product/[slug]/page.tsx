@@ -23,6 +23,8 @@ import { parseProductDescription } from "@/lib/parse-product-description";
 import { getWalletCashbackLabel } from "@/lib/wallet-rate";
 import { displayPrice } from "@/lib/product-price";
 import { MIN_VIEWS_FOR_POPULAR } from "@/lib/product-thresholds";
+import { JsonLd, breadcrumbJsonLd } from "@/components/seo/json-ld";
+import { SITE_URL, pageAlternates } from "@/lib/site";
 
 async function loadReviews(slug: string): Promise<ProductReview[]> {
   try {
@@ -58,15 +60,54 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
   const keywords = product.seoKeywords.slice(0, 2).join(", ");
   const title = product.seoTitle ?? `${product.name}${keywords ? ` — ${keywords}` : ""} | ODTSI`;
+  const images = (product.images.length > 0 ? product.images : [product.imageUrl]).filter(Boolean);
   const fallbackDescription = product.description ? plainText(product.description).slice(0, 155) : "";
   const description =
     product.metaDescription ??
     (fallbackDescription || `Shop ${product.name}${keywords ? ` — ${product.seoKeywords.slice(0, 3).join(", ")}` : ""} at ODTSI.`);
 
   return {
-    title,
+    // Absolute: the seller's seo_title is used exactly as written.
+    title: { absolute: title },
     description,
-    openGraph: { title, description, images: product.imageUrl ? [product.imageUrl] : undefined },
+    alternates: pageAlternates(`/product/${product.slug}`),
+    openGraph: { title, description, url: `${SITE_URL}/product/${product.slug}`, images },
+    twitter: { title, description, images },
+  };
+}
+
+// Google Shopping / rich-result data. Only real values go in — rating is
+// left out until real reviews exist, same rule as the visible page.
+function productJsonLd(product: Product, price: number) {
+  const url = `${SITE_URL}/product/${product.slug}`;
+  const images = (product.images.length > 0 ? product.images : [product.imageUrl]).filter(Boolean);
+  const description = product.metaDescription ?? (product.description ? plainText(product.description).slice(0, 5000) : undefined);
+  const hasRating = product.rating !== null && product.reviewCount !== null && product.reviewCount > 0;
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "@id": `${url}#product`,
+    name: product.name,
+    url,
+    image: images,
+    description,
+    sku: product.id,
+    brand: { "@type": "Brand", name: "ODTSI" },
+    category: product.categorySlug,
+    keywords: product.seoKeywords.length > 0 ? product.seoKeywords.join(", ") : undefined,
+    ...(hasRating
+      ? { aggregateRating: { "@type": "AggregateRating", ratingValue: product.rating, reviewCount: product.reviewCount } }
+      : {}),
+    offers: {
+      "@type": "Offer",
+      url,
+      price: price.toFixed(2),
+      priceCurrency: product.currency,
+      availability: product.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      itemCondition: "https://schema.org/NewCondition",
+      seller: { "@id": `${SITE_URL}/#store` },
+    },
   };
 }
 
@@ -99,6 +140,16 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
   return (
     <div className="mx-auto max-w-[1400px] px-4 py-8 sm:px-5 lg:px-8">
+      <JsonLd
+        data={[
+          productJsonLd(product, price),
+          breadcrumbJsonLd([
+            { name: "Home", url: SITE_URL },
+            { name: product.categorySlug, url: `${SITE_URL}/category/${product.categorySlug}` },
+            { name: product.name, url: `${SITE_URL}/product/${product.slug}` },
+          ]),
+        ]}
+      />
       <nav className="text-xs text-[#8B8880]">
         <Link href="/" className="hover:text-primary">
           Home

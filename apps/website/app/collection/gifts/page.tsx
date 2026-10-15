@@ -1,6 +1,15 @@
+import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/site";
 import { getProducts, type Product } from "@odtsi/exiuscart-client";
 import { ShopGrid } from "@/components/shop/shop-grid";
 import { GiftsHero } from "@/components/collection/gifts-hero";
+
+export const metadata: Metadata = pageMetadata({
+  path: "/collection/gifts",
+  title: "Gift Ideas",
+  description:
+    "Gift ideas for everyone — unique trending gifts delivered to the US, UK, Europe, Canada and Australia. Shop gifts at ODTSI.",
+});
 
 // Real seller-set tags only — a product shows up here because it was
 // actually tagged "gift" in ExiusCart, not because of any curation on

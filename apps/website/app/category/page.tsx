@@ -1,6 +1,15 @@
+import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/site";
 import Link from "next/link";
 import Image from "next/image";
 import { getCategories, type Category } from "@odtsi/exiuscart-client";
+
+export const metadata: Metadata = pageMetadata({
+  path: "/category",
+  title: "Shop by Category",
+  description:
+    "Browse all ODTSI product categories and find trending lifestyle products shipped to the US, UK, Europe, Canada and Australia.",
+});
 
 async function loadCategories(): Promise<Category[]> {
   try {

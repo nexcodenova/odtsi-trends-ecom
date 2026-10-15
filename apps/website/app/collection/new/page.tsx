@@ -1,6 +1,15 @@
+import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/site";
 import { getProducts, type Product } from "@odtsi/exiuscart-client";
 import { ShopGrid } from "@/components/shop/shop-grid";
 import { NewArrivalsHero } from "@/components/collection/new-arrivals-hero";
+
+export const metadata: Metadata = pageMetadata({
+  path: "/collection/new",
+  title: "New Arrivals",
+  description:
+    "The newest products just added at ODTSI. Shop fresh trending finds with delivery to the US, UK and Europe.",
+});
 
 // ExiusCart doesn't expose a createdAt field on products yet, so this
 // can't be sorted by real listing date. IDs are assigned sequentially by

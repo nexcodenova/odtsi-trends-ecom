@@ -2,11 +2,13 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { Newspaper } from "lucide-react";
 import { getBlogPosts, type BlogPost } from "@odtsi/exiuscart-client";
+import { pageMetadata } from "@/lib/site";
 
-export const metadata: Metadata = {
-  title: "Blog | ODTSI",
-  description: "Guides, product picks, and updates from ODTSI.",
-};
+export const metadata: Metadata = pageMetadata({
+  path: "/blog",
+  title: "Blog — Gift Guides, Trends & Product Picks",
+  description: "Gift guides, seasonal shopping ideas, trending product picks and updates from ODTSI.",
+});
 
 async function loadPosts(tag?: string): Promise<BlogPost[]> {
   try {

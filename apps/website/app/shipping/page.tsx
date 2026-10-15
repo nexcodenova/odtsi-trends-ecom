@@ -1,8 +1,17 @@
+import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/site";
 import { LegalPage } from "@/components/legal/legal-page";
+
+export const metadata: Metadata = pageMetadata({
+  path: "/shipping",
+  title: "Shipping Information",
+  description:
+    "ODTSI shipping times and delivery details for the United States, United Kingdom, Europe, Canada and Australia.",
+});
 
 export default function ShippingPage() {
   return (
-    <LegalPage title="Shipping Info" updated="October 9, 2026">
+    <LegalPage title="Shipping Info" updated="October 15, 2026">
       <p>
         This page covers how delivery works at ODTSI, operated by <strong>Fairam (Private) Limited</strong>. For
         returns and refunds, see our{" "}
@@ -17,8 +26,7 @@ export default function ShippingPage() {
 
       <h2>2. Delivery time</h2>
       <p>
-        Delivery generally takes 7–20 business days depending on your location and the specific item — some items
-        arrive sooner, others take longer during high-demand periods.
+        Delivery takes 4–7 business days to every country we ship to, once your order has been dispatched.
       </p>
 
       <h2>3. Tracking</h2>

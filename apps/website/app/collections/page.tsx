@@ -1,5 +1,14 @@
+import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/site";
 import { getProducts, type Product } from "@odtsi/exiuscart-client";
 import { ShopGrid } from "@/components/shop/shop-grid";
+
+export const metadata: Metadata = pageMetadata({
+  path: "/collections",
+  title: "Shop All Collections",
+  description:
+    "Browse every ODTSI collection — trending products, new arrivals, gifts and items on sale, delivered to the US, UK and Europe.",
+});
 
 async function loadProducts(): Promise<Product[]> {
   try {

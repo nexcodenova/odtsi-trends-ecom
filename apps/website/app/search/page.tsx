@@ -1,7 +1,11 @@
+import type { Metadata } from "next";
+import { PRIVATE_PAGE } from "@/lib/site";
 import { getProducts, type Product } from "@odtsi/exiuscart-client";
 import { ProductCarousel } from "@/components/home/product-carousel";
 import { SearchTracker } from "@/components/shared/search-tracker";
 import { SearchX } from "lucide-react";
+
+export const metadata: Metadata = PRIVATE_PAGE;
 
 async function loadResults(q: string): Promise<Product[]> {
   try {

@@ -1,8 +1,17 @@
+import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/site";
 import { LegalPage } from "@/components/legal/legal-page";
+
+export const metadata: Metadata = pageMetadata({
+  path: "/returns",
+  title: "Returns & Refunds",
+  description:
+    "How to return an ODTSI order or request a refund for a damaged, defective or wrong item.",
+});
 
 export default function ReturnsPage() {
   return (
-    <LegalPage title="Shipping & Returns" updated="September 3, 2026">
+    <LegalPage title="Shipping & Returns" updated="October 15, 2026">
       <p>
         This page explains how delivery, returns, and refunds work at ODTSI, operated by{" "}
         <strong>Fairam (Private) Limited</strong>. It differs a little depending on the type of product you
@@ -11,9 +20,9 @@ export default function ReturnsPage() {
 
       <h2>1. Delivery times</h2>
       <p>
-        Orders are typically processed within 1–3 business days. Delivery generally takes 7–20 business days
-        depending on your location and the specific item — some items arrive sooner, others take longer during
-        high-demand periods. You&rsquo;ll receive a real tracking number by email once your physical order ships.
+        Orders are typically processed within 1–3 business days. Delivery takes 4–7 business days to every
+        country we ship to, once your order has been dispatched. You&rsquo;ll receive a real tracking number by
+        email once your physical order ships.
       </p>
 
       <h2>2. Physical products</h2>

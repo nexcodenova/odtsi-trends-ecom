@@ -8,7 +8,7 @@ import { DownloadGate } from "@/components/download/download-gate";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Your Download | ODTSI",
+  title: "Your Download",
   robots: { index: false, follow: false },
 };
 

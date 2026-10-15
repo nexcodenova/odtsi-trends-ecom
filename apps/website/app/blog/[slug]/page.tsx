@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getBlogPost, type BlogPost } from "@odtsi/exiuscart-client";
 import { sanitizeHtml } from "@/lib/parse-product-description";
+import { pageAlternates } from "@/lib/site";
 
 const loadPost = cache(async (slug: string): Promise<BlogPost | null> => {
   try {
@@ -29,9 +30,16 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const post = await loadPost(slug);
   if (!post) return {};
   return {
-    title: `${post.title} | ODTSI Blog`,
+    title: post.title,
     description: post.excerpt ?? undefined,
-    openGraph: { title: post.title, description: post.excerpt ?? undefined, images: post.coverImageUrl ? [post.coverImageUrl] : undefined },
+    alternates: pageAlternates(`/blog/${post.slug}`),
+    openGraph: {
+      type: "article",
+      title: post.title,
+      description: post.excerpt ?? undefined,
+      publishedTime: post.publishedAt ?? undefined,
+      images: post.coverImageUrl ? [post.coverImageUrl] : undefined,
+    },
   };
 }
 

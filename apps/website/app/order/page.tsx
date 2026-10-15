@@ -1,4 +1,8 @@
+import type { Metadata } from "next";
+import { PRIVATE_PAGE } from "@/lib/site";
 import { TrackOrder } from "@/components/account/track-order";
+
+export const metadata: Metadata = PRIVATE_PAGE;
 
 // Standalone guest-accessible version of the same real order lookup shown
 // on the Account page — no sign-in required, matches a normal "Track My

@@ -1,6 +1,10 @@
+import type { Metadata } from "next";
+import { PRIVATE_PAGE } from "@/lib/site";
 import { getWallet } from "@odtsi/exiuscart-client";
 import { CheckoutContent } from "@/components/checkout/checkout-content";
 import { getSession } from "@/lib/session";
+
+export const metadata: Metadata = PRIVATE_PAGE;
 
 // Entirely derived from localStorage at runtime — a static shell has
 // nothing real to show, so skip prerendering it at build time. Has to live

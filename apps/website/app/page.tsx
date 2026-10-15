@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/site";
 import { HeroCarousel, type HeroSlide } from "@/components/home/hero";
 import { CategoryGrid } from "@/components/home/category-grid";
 import { TrendingProducts } from "@/components/home/trending-products";
@@ -9,22 +11,24 @@ import { WhyOdtsi } from "@/components/home/why-odtsi";
 import { ConnectSection } from "@/components/home/connect-section";
 import { getCategories, type Category } from "@odtsi/exiuscart-client";
 
-// Both banners are pre-designed graphics with their own text baked in,
-// so showTextOverlay stays off for these — flip it on for a plain photo.
+export const metadata: Metadata = pageMetadata({
+  path: "/",
+  title: { absolute: "ODTSI — Trending Products & Gifts, Shipped to the US, UK & Europe" },
+  description:
+    "Shop trending lifestyle products, gifts and deals with fast delivery to the USA, UK, Ireland, Europe, Canada and Australia. Earn wallet cashback on every order.",
+});
+
+// Halloween leads until Oct 31. Both banners are pre-designed graphics
+// with their own text baked in, so showTextOverlay stays off for these —
+// flip it on for a plain photo.
 const HERO_SLIDES: HeroSlide[] = [
-  { imageUrl: "/hero-cashback.png", showTextOverlay: false, ctaHref: "/wallet", objectPosition: "object-top" },
-  {
-    imageUrl: "/hero-summer.png",
-    imageUrlMobile: "/hero-summer-mobile.png",
-    showTextOverlay: false,
-    ctaHref: "/collection/summer-sale",
-  },
   {
     imageUrl: "/hero-halloween.png",
     imageUrlMobile: "/hero-halloween-mobile.png",
     showTextOverlay: false,
-    ctaHref: "/collection/halloween",
+    ctaHref: "/collections",
   },
+  { imageUrl: "/hero-cashback.png", showTextOverlay: false, ctaHref: "/wallet", objectPosition: "object-top" },
 ];
 
 async function loadCategories(): Promise<Category[]> {

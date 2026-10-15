@@ -1,6 +1,15 @@
+import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/site";
 import { getProducts, type Product } from "@odtsi/exiuscart-client";
 import { ProductCard } from "@/components/product/product-card";
 import { OnSaleHero } from "@/components/collection/on-sale-hero";
+
+export const metadata: Metadata = pageMetadata({
+  path: "/collection/on-sale",
+  title: "Sale — Deals & Discounts",
+  description:
+    "Shop ODTSI deals: discounted trending products with savings shown on every item. Fast delivery to the US, UK, Europe, Canada and Australia.",
+});
 
 const MIN_DISCOUNT_PCT = 40;
 

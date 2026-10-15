@@ -1,7 +1,16 @@
+import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/site";
 import { getProducts, type Product } from "@odtsi/exiuscart-client";
 import { ShopGrid } from "@/components/shop/shop-grid";
 import { TrendingHero } from "@/components/collection/trending-hero";
 import { MIN_VIEWS_FOR_POPULAR } from "@/lib/product-thresholds";
+
+export const metadata: Metadata = pageMetadata({
+  path: "/collection/trending",
+  title: "Trending Products Right Now",
+  description:
+    "See what is trending at ODTSI right now — the most popular viral products, shipped to the US, UK and Europe.",
+});
 
 // Products the seller flagged as trending in ExiusCart, then anything with
 // the same real-view-count signal as the homepage's Most Viewed row —

@@ -1,4 +1,13 @@
+import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/site";
 import { LegalPage } from "@/components/legal/legal-page";
+
+export const metadata: Metadata = pageMetadata({
+  path: "/privacy",
+  title: "Privacy Policy",
+  description:
+    "How ODTSI collects, uses and protects your personal data, including your rights under UK GDPR and EU GDPR.",
+});
 
 export default function PrivacyPage() {
   return (

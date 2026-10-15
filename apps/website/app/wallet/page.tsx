@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+import { PRIVATE_PAGE } from "@/lib/site";
 import Link from "next/link";
 import { Wallet as WalletIcon, ShoppingBag, Landmark, PiggyBank } from "lucide-react";
 import {
@@ -15,6 +17,8 @@ import { LogoutButton } from "@/components/account/logout-button";
 import { getWalletCashbackLabel } from "@/lib/wallet-rate";
 import { WithdrawForm } from "@/components/wallet/withdraw-form";
 import { CancelWithdrawalButton } from "@/components/wallet/cancel-withdrawal-button";
+
+export const metadata: Metadata = PRIVATE_PAGE;
 
 // Real cash, not points — every dollar credited to a wallet is a dollar
 // that came off a real order. It can be spent at checkout, or withdrawn as

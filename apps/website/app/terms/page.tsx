@@ -1,4 +1,13 @@
+import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/site";
 import { LegalPage } from "@/components/legal/legal-page";
+
+export const metadata: Metadata = pageMetadata({
+  path: "/terms",
+  title: "Terms of Service",
+  description:
+    "The terms that apply when you shop at ODTSI.",
+});
 
 export default function TermsPage() {
   return (

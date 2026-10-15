@@ -8,6 +8,8 @@ import { TrackingScripts } from "@/components/shared/tracking-scripts";
 import { PageViewTracker } from "@/components/shared/page-view-tracker";
 import { SitePopups } from "@/components/marketing/site-popups";
 import { getCategories, type Category } from "@odtsi/exiuscart-client";
+import { JsonLd } from "@/components/seo/json-ld";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 // The actual font file, downloaded once and committed to the repo
@@ -26,9 +28,63 @@ const plusJakarta = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "ODTSI — Trending Finds, Delivered Fast",
-  description: "Trending lifestyle products delivered fast across the UK, US, EU, Australia and Canada.",
+  metadataBase: new URL(SITE_URL),
+  // Pages set a short title; the template adds the brand once.
+  title: {
+    default: "ODTSI — Trending Products & Gifts, Shipped to the US, UK & Europe",
+    template: "%s | ODTSI",
+  },
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  openGraph: {
+    type: "website",
+    siteName: SITE_NAME,
+    locale: "en_US",
+    alternateLocale: ["en_GB", "en_IE", "en_CA", "en_AU"],
+    url: SITE_URL,
+    images: ["/hero-halloween.png"],
+  },
+  twitter: { card: "summary_large_image" },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1, "max-video-preview": -1 },
+  },
+  // Paste the codes from Google Search Console / Bing Webmaster Tools
+  // into these env vars to verify ownership — no code change needed.
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
+    other: process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION
+      ? { "msvalidate.01": process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION }
+      : undefined,
+  },
 };
+
+const SITE_JSON_LD = [
+  {
+    "@context": "https://schema.org",
+    "@type": "OnlineStore",
+    "@id": `${SITE_URL}/#store`,
+    name: SITE_NAME,
+    url: SITE_URL,
+    description: SITE_DESCRIPTION,
+    email: "enquery@odtsi.com",
+    areaServed: ["US", "GB", "IE", "DE", "FR", "NL", "ES", "IT", "CA", "AU"],
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "@id": `${SITE_URL}/#website`,
+    name: SITE_NAME,
+    url: SITE_URL,
+    publisher: { "@id": `${SITE_URL}/#store` },
+    potentialAction: {
+      "@type": "SearchAction",
+      target: { "@type": "EntryPoint", urlTemplate: `${SITE_URL}/search?q={search_term_string}` },
+      "query-input": "required name=search_term_string",
+    },
+  },
+];
 
 async function loadCategories(): Promise<Category[]> {
   try {
@@ -55,6 +111,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <TrackingScripts />
         <PageViewTracker />
         <SitePopups />
+        <JsonLd data={SITE_JSON_LD} />
       </body>
     </html>
   );

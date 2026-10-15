@@ -1,4 +1,13 @@
+import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/site";
 import Link from "next/link";
+
+export const metadata: Metadata = pageMetadata({
+  path: "/about",
+  title: "About Us",
+  description:
+    "ODTSI is an online store for trending lifestyle products, shipping to customers across the US, UK, Europe, Canada and Australia.",
+});
 
 export default function AboutPage() {
   return (
