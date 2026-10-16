@@ -14,6 +14,7 @@ import {
 import { getSession } from "@/lib/session";
 import { formatCurrency } from "@odtsi/utils";
 import { LogoutButton } from "@/components/account/logout-button";
+import { IdentifyShopper } from "@/components/account/identify-shopper";
 import { getWalletCashbackLabel } from "@/lib/wallet-rate";
 import { WithdrawForm } from "@/components/wallet/withdraw-form";
 import { CancelWithdrawalButton } from "@/components/wallet/cancel-withdrawal-button";
@@ -286,6 +287,7 @@ export default async function WalletPage() {
             </div>
           )}
 
+          <IdentifyShopper email={session.customer.email} name={session.customer.name} />
           <LogoutButton />
         </div>
 

@@ -5,6 +5,7 @@ import { User, Wallet as WalletIcon, ChevronRight } from "lucide-react";
 import { getPayoutMethod, getProfile, type PayoutMethod, type Profile } from "@odtsi/exiuscart-client";
 import { getSession } from "@/lib/session";
 import { LogoutButton } from "@/components/account/logout-button";
+import { IdentifyShopper } from "@/components/account/identify-shopper";
 import { TrackOrder } from "@/components/account/track-order";
 import { OrderHistory } from "@/components/account/order-history";
 import { EditProfileForm } from "@/components/account/edit-profile-form";
@@ -132,6 +133,7 @@ export default async function AccountPage() {
       </div>
 
       <div className="mx-auto w-full max-w-lg">
+        <IdentifyShopper email={session.customer.email} name={session.customer.name} />
         <LogoutButton />
       </div>
     </div>

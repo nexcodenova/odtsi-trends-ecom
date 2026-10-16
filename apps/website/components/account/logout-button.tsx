@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
+import { forgetShopper } from "@odtsi/exiuscart-client";
 import { Button } from "@/components/ui/button";
 
 export function LogoutButton() {
@@ -9,6 +10,7 @@ export function LogoutButton() {
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
+    forgetShopper();
     router.push("/");
     router.refresh();
   }

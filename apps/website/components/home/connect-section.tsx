@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { identifyShopper } from "@odtsi/exiuscart-client";
 import { Mail, Facebook, Instagram, Twitter, Youtube, MessageCircle } from "lucide-react";
 
 // Placeholder hrefs — real profile URLs aren't set up yet. Swap "#" for the
@@ -13,8 +14,8 @@ const SOCIAL_LINKS = [
   { label: "WhatsApp", href: "#", icon: MessageCircle },
 ];
 
-// Form UI only — not wired to a real email service yet (Mailchimp, or an
-// ExiusCart endpoint) since that's separate backend work, not yet scoped.
+// Links the email to this browser in ExiusCart (for its personalised
+// emails), but there's no real newsletter list or coupon behind it yet.
 export function ConnectSection() {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "submitted" | "error">("idle");
@@ -25,6 +26,7 @@ export function ConnectSection() {
       setStatus("error");
       return;
     }
+    identifyShopper({ email });
     setStatus("submitted");
   }
 

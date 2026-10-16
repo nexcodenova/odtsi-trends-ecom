@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type FocusEvent, type FormEvent } from "re
 import Link from "next/link";
 import { useCart } from "@/hooks/use-cart";
 import { formatCurrency } from "@odtsi/utils";
-import { notifyCheckoutStarted, previewDiscount, type CheckoutPayload, type CheckoutResult } from "@odtsi/exiuscart-client";
+import { identifyShopper, notifyCheckoutStarted, previewDiscount, type CheckoutPayload, type CheckoutResult } from "@odtsi/exiuscart-client";
 import { saveOrderRecord } from "@/lib/order-history";
 import { getBuyNowItem, clearBuyNowItem } from "@/lib/buy-now";
 import { cartSubtotal, type CartItem } from "@/lib/cart";
@@ -39,6 +39,9 @@ export function CheckoutContent({
   useEffect(() => {
     setLocalBuyNowItem(getBuyNowItem());
   }, []);
+  useEffect(() => {
+    if (customer) identifyShopper({ email: customer.email, name: customer.name });
+  }, [customer]);
 
   const items = buyNowItem ? [buyNowItem] : cartItems;
   const subtotal = buyNowItem ? cartSubtotal([buyNowItem]) : cartSubtotalAmount;
@@ -102,6 +105,8 @@ export function CheckoutContent({
     const email = e.currentTarget.value.trim().toLowerCase();
     if (!email || !email.includes("@") || email === lastCheckoutStartedEmail.current) return;
     lastCheckoutStartedEmail.current = email;
+    const name = e.currentTarget.form?.elements.namedItem("name");
+    identifyShopper({ email, name: name instanceof HTMLInputElement ? name.value : undefined });
     notifyCheckoutStarted(
       email,
       items.map((i) => ({ productId: i.productId, quantity: i.quantity, variantId: i.exiusVariantId })),

@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { identifyShopper } from "@odtsi/exiuscart-client";
 
 export function SignupForm({ cashbackLabel }: { cashbackLabel: string }) {
   const router = useRouter();
@@ -29,6 +30,7 @@ export function SignupForm({ cashbackLabel }: { cashbackLabel: string }) {
       body: JSON.stringify({ name, email, password }),
     });
     if (res.ok) {
+      identifyShopper({ email, name });
       router.push("/wallet");
       router.refresh();
       return;

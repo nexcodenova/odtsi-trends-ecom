@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   getPopups,
   getSignupForms,
+  identifyShopper,
   trackPopup,
   trackSignupFormImpression,
   submitSignupForm,
@@ -177,6 +178,9 @@ function SignupFormBody({ form }: { form: SignupForm }) {
     setStatus("loading");
     try {
       await submitSignupForm(form.id, answers);
+      const emailField = form.fields.find((f) => f.type === "email");
+      const email = emailField ? answers[emailField.id] : undefined;
+      if (email) identifyShopper({ email });
       setStatus("done");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't send that — try again.");
