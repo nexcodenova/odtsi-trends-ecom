@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { identifyShopper } from "@odtsi/exiuscart-client";
+import { subscribeShopper } from "@odtsi/exiuscart-client";
 import { Mail, Facebook, Instagram, Twitter, Youtube, MessageCircle } from "lucide-react";
 
 // Placeholder hrefs — real profile URLs aren't set up yet. Swap "#" for the
@@ -14,20 +14,31 @@ const SOCIAL_LINKS = [
   { label: "WhatsApp", href: "#", icon: MessageCircle },
 ];
 
-// Links the email to this browser in ExiusCart (for its personalised
-// emails), but there's no real newsletter list or coupon behind it yet.
+// Real newsletter sign-up on ExiusCart's list. The 10% code arrives by
+// email from the Welcome series flow (Email Marketing → Flows), which has
+// to be switched on in the dashboard or nothing is sent.
 export function ConnectSection() {
   const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<"idle" | "submitted" | "error">("idle");
+  const [status, setStatus] = useState<"idle" | "loading" | "submitted" | "error">("idle");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [needsConfirmation, setNeedsConfirmation] = useState(false);
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!email.includes("@")) {
+      setErrorMessage("Enter a valid email address.");
       setStatus("error");
       return;
     }
-    identifyShopper({ email });
-    setStatus("submitted");
+    setStatus("loading");
+    try {
+      const result = await subscribeShopper({ email });
+      setNeedsConfirmation(result.needsConfirmation);
+      setStatus("submitted");
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : "Couldn't subscribe — try again.");
+      setStatus("error");
+    }
   }
 
   return (
@@ -42,7 +53,9 @@ export function ConnectSection() {
 
           {status === "submitted" ? (
             <p className="mx-auto mt-6 max-w-lg rounded-xl bg-white px-5 py-3.5 text-sm font-bold text-primary">
-              You&apos;re on the list — check your inbox.
+              {needsConfirmation
+                ? "Almost there — confirm your email from the message we just sent."
+                : "You're on the list — your 10% code is on its way to your inbox."}
             </p>
           ) : (
             <form onSubmit={handleSubmit} className="mx-auto mt-6 flex max-w-lg flex-col gap-3 sm:flex-row">
@@ -59,14 +72,20 @@ export function ConnectSection() {
               />
               <button
                 type="submit"
+                disabled={status === "loading"}
                 className="mx-auto flex h-16 w-1/2 flex-shrink-0 items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-[#F6C935] to-[#C99200] px-8 text-sm font-extrabold text-[#16161A] shadow-[0_6px_16px_-6px_rgba(201,146,0,0.55)] transition hover:brightness-105 sm:mx-0 sm:w-auto"
               >
                 <Mail size={15} />
-                Subscribe
+                {status === "loading" ? "Subscribing..." : "Subscribe"}
               </button>
             </form>
           )}
-          {status === "error" && <p className="mt-2 text-xs font-bold text-[#C05A32]">Enter a valid email address.</p>}
+          {status === "error" && <p className="mt-2 text-xs font-bold text-[#C05A32]">{errorMessage}</p>}
+          {status !== "submitted" && (
+            <p className="mx-auto mt-3 max-w-lg text-xs text-[#8B8880]">
+              By subscribing you agree to receive marketing emails from ODTSI. Unsubscribe anytime.
+            </p>
+          )}
         </div>
 
         <div className="rounded-3xl bg-[#F6F5F3] px-6 py-10 text-center sm:px-10">

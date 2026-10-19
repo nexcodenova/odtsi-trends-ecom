@@ -3,11 +3,17 @@ import { signUp } from "@odtsi/exiuscart-client";
 import { SESSION_COOKIE, sessionCookieOptions, type Session } from "@/lib/session";
 
 export async function POST(request: Request) {
-  const { name, email, password } = await request.json();
+  const { name, email, password, birthday, marketingConsent } = await request.json();
 
   let result;
   try {
-    result = await signUp({ name, email, password });
+    result = await signUp({
+      name,
+      email,
+      password,
+      birthday: typeof birthday === "string" ? birthday : undefined,
+      marketingConsent: marketingConsent === true,
+    });
   } catch (err) {
     // Real failure from ExiusCart (email already taken, endpoint down,
     // etc.) — forwarded as-is, not a generic "not connected" message.

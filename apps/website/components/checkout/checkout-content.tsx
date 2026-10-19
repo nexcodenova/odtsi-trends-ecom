@@ -120,6 +120,10 @@ export function CheckoutContent({
     const form = new FormData(e.currentTarget);
 
     const email = String(form.get("email"));
+    // Unticked by default; only an active tick counts as marketing consent.
+    if (form.get("marketing_consent") === "on") {
+      identifyShopper({ email, name: String(form.get("name")), marketingConsent: true });
+    }
 
     try {
       const origin = window.location.origin;
@@ -231,6 +235,10 @@ export function CheckoutContent({
               <input name="email" type="email" required defaultValue={customer?.email} placeholder="Email" onBlur={handleEmailBlur} className="h-12 rounded-xl border border-black/10 px-4 text-sm outline-none focus:border-primary" />
               <input name="phone" required placeholder="Phone" className="h-12 rounded-xl border border-black/10 px-4 text-sm outline-none focus:border-primary sm:col-span-2" />
             </div>
+            <label className="mt-3 flex items-start gap-2.5 text-sm text-[#716D67]">
+              <input type="checkbox" name="marketing_consent" className="mt-0.5 h-4 w-4 flex-shrink-0 accent-primary" />
+              Email me offers and new arrivals. Unsubscribe anytime.
+            </label>
           </div>
 
           <div>

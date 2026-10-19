@@ -29,11 +29,25 @@ async function extractErrorMessage(res: Response, fallback: string): Promise<str
   }
 }
 
-export async function signUp(payload: { name: string; email: string; password: string }): Promise<AuthResult> {
+// birthday is "MM-DD" (ExiusCart keeps only month and day).
+// marketingConsent only when the shopper ticked the unticked offers box.
+export async function signUp(payload: {
+  name: string;
+  email: string;
+  password: string;
+  birthday?: string;
+  marketingConsent?: boolean;
+}): Promise<AuthResult> {
   const res = await fetch(storeUrl("/auth/signup"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      name: payload.name,
+      email: payload.email,
+      password: payload.password,
+      birthday: payload.birthday || undefined,
+      marketing_consent: payload.marketingConsent || undefined,
+    }),
   });
   if (!res.ok) throw new Error(await extractErrorMessage(res, `Signup failed: ${res.status}`));
   return mapAuthResult(await res.json());

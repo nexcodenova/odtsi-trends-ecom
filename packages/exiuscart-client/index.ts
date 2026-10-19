@@ -42,6 +42,6 @@ export {
   submitSignupForm,
 } from "./marketing";
 export { getReviews } from "./reviews";
-export { trackStorefrontEvent, identifyShopper, forgetShopper } from "./insights";
+export { trackStorefrontEvent, identifyShopper, forgetShopper, subscribeShopper, type SubscribeResult } from "./insights";
 export { notifyCheckoutStarted, type CheckoutStartedItem } from "./checkout-started";
 export { EXIUSCART_BASE_URL, SHOP_SLUG, SHOP_ID } from "./config";

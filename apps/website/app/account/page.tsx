@@ -74,7 +74,7 @@ export default async function AccountPage() {
   }
 
   const [profile, payoutMethod] = await Promise.all([loadProfile(session.token), loadPayoutMethod(session.token)]);
-  const customer = profile?.customer ?? { ...session.customer, phone: null };
+  const customer = profile?.customer ?? { ...session.customer, phone: null, birthday: null };
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-5 px-5 py-10 sm:py-14">
@@ -96,6 +96,7 @@ export default async function AccountPage() {
               name={customer.name}
               email={customer.email}
               phone={customer.phone}
+              birthday={customer.birthday}
               pendingEmail={profile?.pendingEmail?.sentTo ?? null}
             />
             <ChangePasswordForm />

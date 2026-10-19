@@ -6,7 +6,7 @@ export async function PATCH(request: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Please sign in again." }, { status: 401 });
 
-  const { name, email, phone, currentPassword } = await request.json();
+  const { name, email, phone, birthday, currentPassword } = await request.json();
   if (typeof name !== "string" || !name.trim() || typeof email !== "string" || !email.trim()) {
     return NextResponse.json({ error: "Name and email are both required." }, { status: 400 });
   }
@@ -23,6 +23,7 @@ export async function PATCH(request: Request) {
       // verification for any email it's given.
       email: emailChanged ? email.trim() : undefined,
       phone: typeof phone === "string" ? phone.trim() : undefined,
+      birthday: typeof birthday === "string" ? birthday : undefined,
       currentPassword: emailChanged ? currentPassword : undefined,
     });
   } catch (err) {

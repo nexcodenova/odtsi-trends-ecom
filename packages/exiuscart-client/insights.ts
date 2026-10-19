@@ -1,4 +1,4 @@
-import { storeUrl } from "./config";
+import { EXIUSCART_BASE_URL, SHOP_ID, storeUrl } from "./config";
 
 // ExiusCart's own on-site analytics endpoint — confirmed real and live
 // this session (POST /public/store/{slug}/track, {"ok":true}). Separate
@@ -53,10 +53,13 @@ function getKnownEmail(): string | undefined {
 }
 
 // Called on sign-out so the next person on a shared computer isn't tied
-// to the previous shopper's email.
+// to the previous shopper's email. ExiusCart asked for a fresh visitor_id
+// here too, so the next person's browsing starts unlinked.
 export function forgetShopper(): void {
+  memoryVisitorId = null;
   try {
     localStorage.removeItem(EMAIL_KEY);
+    localStorage.removeItem(VISITOR_KEY);
   } catch {
     // Nothing stored to forget.
   }
@@ -84,14 +87,21 @@ export async function trackStorefrontEvent(event: TrackEvent): Promise<void> {
   }
 }
 
-// Links this browser's last 30 days of product views to an email. Called
-// wherever a shopper gives one: sign-in, sign-up, checkout, newsletter.
-// Repeat calls for an already-linked email are skipped unless they add a
-// name or birthday ("MM-DD").
-export async function identifyShopper(shopper: { email: string; name?: string; birthday?: string }): Promise<void> {
+// Links this browser's product views to an email. Called wherever a
+// shopper gives one: sign-in, sign-up, checkout. Repeat calls for an
+// already-linked email are skipped unless they add a name, birthday
+// ("MM-DD") or consent. Identifying alone never allows marketing emails —
+// marketingConsent is true only when the shopper ticked an unticked
+// "email me offers" box. Leaving it out never removes an earlier yes.
+export async function identifyShopper(shopper: {
+  email: string;
+  name?: string;
+  birthday?: string;
+  marketingConsent?: boolean;
+}): Promise<void> {
   const email = shopper.email.trim().toLowerCase();
   if (!email.includes("@")) return;
-  if (getKnownEmail() === email && !shopper.name && !shopper.birthday) return;
+  if (getKnownEmail() === email && !shopper.name && !shopper.birthday && !shopper.marketingConsent) return;
   try {
     localStorage.setItem(EMAIL_KEY, email);
   } catch {
@@ -106,10 +116,57 @@ export async function identifyShopper(shopper: { email: string; name?: string; b
         email,
         name: shopper.name?.trim() || undefined,
         birthday: shopper.birthday || undefined,
+        marketing_consent: shopper.marketingConsent || undefined,
       }),
       keepalive: true,
     });
   } catch {
     // Same as /track — never blocks the form that triggered it.
   }
+}
+
+export interface SubscribeResult {
+  // Only when a popupId of a popup with a discount code was passed.
+  discountCode: string | null;
+  // The store uses double opt-in — show "check your inbox", not a code.
+  needsConfirmation: boolean;
+}
+
+// Newsletter sign-up. Subscribing is itself the marketing yes, and it links
+// this browser's views the same way identify does. The 10% welcome code is
+// emailed by the Welcome series flow (turned on in ExiusCart's dashboard),
+// not returned here unless popupId is passed. Unlike track/identify this
+// one throws, so the form can show a real error.
+export async function subscribeShopper(shopper: {
+  email: string;
+  name?: string;
+  birthday?: string;
+  popupId?: string;
+}): Promise<SubscribeResult> {
+  const email = shopper.email.trim().toLowerCase();
+  const body = JSON.stringify({
+    email,
+    name: shopper.name?.trim() || undefined,
+    birthday: shopper.birthday || undefined,
+    visitor_id: getVisitorId(),
+    source: "website_form",
+    popup_id: shopper.popupId ? Number(shopper.popupId) : undefined,
+    page_url: typeof window !== "undefined" ? window.location.href : undefined,
+  });
+  const post = (url: string) => fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body });
+  let res = await post(storeUrl("/subscribe"));
+  // The slug route wasn't deployed yet on 2026-10-19 (plain 404 "Not
+  // Found"); the numeric-ID route takes the same body.
+  if (res.status === 404 && SHOP_ID) res = await post(`${EXIUSCART_BASE_URL}/public/email-list/${SHOP_ID}/subscribe`);
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    if (res.status === 429) throw new Error("Too many tries — wait a minute and try again.");
+    throw new Error(typeof data?.detail === "string" ? data.detail : "Couldn't subscribe — try again.");
+  }
+  try {
+    localStorage.setItem(EMAIL_KEY, email);
+  } catch {
+    // Linked server-side already; remembering it only adds the email to /track.
+  }
+  return { discountCode: data?.discount_code ?? null, needsConfirmation: data?.needs_confirmation === true };
 }

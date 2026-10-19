@@ -4,12 +4,16 @@ import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { identifyShopper } from "@odtsi/exiuscart-client";
+import { BirthdayInput, completeBirthday } from "./birthday-input";
 
 export function SignupForm({ cashbackLabel }: { cashbackLabel: string }) {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [birthday, setBirthday] = useState("");
+  // Unticked by default — UK/EU consent has to be an active choice.
+  const [marketingConsent, setMarketingConsent] = useState(false);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -27,7 +31,7 @@ export function SignupForm({ cashbackLabel }: { cashbackLabel: string }) {
     const res = await fetch("/api/auth/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password }),
+      body: JSON.stringify({ name, email, password, birthday: completeBirthday(birthday), marketingConsent }),
     });
     if (res.ok) {
       identifyShopper({ email, name });
@@ -93,6 +97,31 @@ export function SignupForm({ cashbackLabel }: { cashbackLabel: string }) {
           />
           <p className="mt-1 text-xs text-[#8B8880]">At least 8 characters.</p>
         </div>
+
+        <div>
+          <label htmlFor="birthday" className="text-xs font-bold uppercase tracking-wide text-[#8B8880]">
+            Birthday <span className="font-normal normal-case tracking-normal">(optional)</span>
+          </label>
+          <div className="mt-1.5">
+            <BirthdayInput
+              id="birthday"
+              value={birthday}
+              onChange={setBirthday}
+              className="h-12 w-full rounded-xl border border-black/10 bg-white px-3 text-sm text-[#16161A] outline-none focus:border-primary"
+            />
+          </div>
+          <p className="mt-1 text-xs text-[#8B8880]">We&apos;ll send you a birthday treat.</p>
+        </div>
+
+        <label className="flex items-start gap-2.5 text-sm text-[#716D67]">
+          <input
+            type="checkbox"
+            checked={marketingConsent}
+            onChange={(e) => setMarketingConsent(e.target.checked)}
+            className="mt-0.5 h-4 w-4 flex-shrink-0 accent-primary"
+          />
+          Email me offers and new arrivals. Unsubscribe anytime.
+        </label>
 
         {status === "error" && <p className="text-sm font-bold text-red-600">{errorMessage}</p>}
 

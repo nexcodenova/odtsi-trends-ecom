@@ -5,17 +5,26 @@ import type { AuthResult } from "./auth";
 // ExiusCart always knows exactly which customer is asking from the token
 // alone. Shapes confirmed against live responses 2026-10-12.
 
-export type Customer = AuthResult["customer"] & { phone: string | null };
+// birthday is "MM-DD" — whether GET returns it isn't confirmed yet, so it
+// stays null when missing.
+export type Customer = AuthResult["customer"] & { phone: string | null; birthday: string | null };
 
 interface RawCustomer {
   id: number;
   name: string;
   email: string;
   phone?: string | null;
+  birthday?: string | null;
 }
 
 function mapCustomer(raw: RawCustomer): Customer {
-  return { id: String(raw.id), name: raw.name, email: raw.email, phone: raw.phone ?? null };
+  return {
+    id: String(raw.id),
+    name: raw.name,
+    email: raw.email,
+    phone: raw.phone ?? null,
+    birthday: raw.birthday ? raw.birthday.slice(-5) : null,
+  };
 }
 
 // A code ExiusCart emailed to confirm a change (new login email or new
@@ -77,7 +86,8 @@ export interface ProfileUpdate {
 // email changes; 409 if another customer already uses that email.
 export async function updateProfile(
   token: string,
-  payload: { name?: string; email?: string; phone?: string; currentPassword?: string },
+  // birthday: "MM-DD" to set, "" to remove, undefined to leave as is.
+  payload: { name?: string; email?: string; phone?: string; birthday?: string; currentPassword?: string },
 ): Promise<ProfileUpdate> {
   const res = await fetch(storeUrl("/account/profile"), {
     method: "PATCH",
@@ -86,6 +96,7 @@ export async function updateProfile(
       name: payload.name,
       email: payload.email,
       phone: payload.phone,
+      birthday: payload.birthday,
       current_password: payload.currentPassword || undefined,
     }),
   });
