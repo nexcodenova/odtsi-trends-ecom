@@ -215,7 +215,10 @@ export function ProductCard({ product, compact, sale, discountBadge }: ProductCa
           </div>
         )}
 
-        {!compact && !sale && (product.viewCount !== null || !isAffiliate) && (
+        {/* The default card's discount pill lives on this row, next to the
+            stock status, instead of wrapping onto its own line under the
+            price — one fewer line per card. */}
+        {!compact && !sale && (product.viewCount !== null || !isAffiliate || (hasDiscount && !badge)) && (
           <div className="mt-1 flex items-center gap-2.5 text-xs text-[#8B8880]">
             {product.viewCount !== null && (
               <span className="flex items-center gap-1.5">
@@ -232,6 +235,11 @@ export function ProductCard({ product, compact, sale, discountBadge }: ProductCa
                     : "In Stock"}
               </span>
             )}
+            {hasDiscount && !badge && (
+              <span className="shrink-0 rounded-full bg-action px-2 py-0.5 text-xs font-extrabold text-action-ink">
+                -{discountPct}%
+              </span>
+            )}
           </div>
         )}
 
@@ -240,11 +248,6 @@ export function ProductCard({ product, compact, sale, discountBadge }: ProductCa
             <Price amount={product.compareAtPrice!} currency={product.currency} className="text-sm text-[#a3a19c] line-through" />
           )}
           <Price amount={price} currency={product.currency} className="text-xl font-extrabold text-primary" />
-          {hasDiscount && !badge && (
-            <span className="rounded-full bg-action px-2.5 py-1 text-xs font-extrabold text-action-ink">
-              -{discountPct}%
-            </span>
-          )}
         </div>
 
         {deal && !compact && (
