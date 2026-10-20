@@ -190,9 +190,9 @@ export function Navbar({ categories }: { categories: Category[] }) {
           scroll away in the footer. Nothing it offered was actually unique
           to it any more. */}
       <div className="mx-auto flex max-w-[1400px] items-center gap-4 bg-primary px-4 py-3 sm:gap-5 sm:px-[20px] sm:py-4">
-        {/* Placeholder wordmark — swap for the real ODTSI logo once it's ready */}
-        <Link href="/" className="text-xl font-extrabold tracking-tight text-white sm:text-2xl">
-          ODTSI
+        <Link href="/" aria-label="ODTSI home" className="flex shrink-0 items-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/odtsi-logo.svg" alt="ODTSI" className="h-5 w-auto sm:h-6" />
         </Link>
 
         {/* Search — inline on desktop, its own full-width row on mobile (below) */}
