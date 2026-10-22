@@ -12,6 +12,7 @@ import { Price } from "@/components/shared/price";
 import { cheapestVariant } from "@/lib/product-price";
 import { getSpecIcon } from "@/lib/spec-icons";
 import { trackViewContent } from "@/lib/tracking";
+import { PaymentBadges } from "@/components/checkout/payment-badges";
 
 // Price, stock, color/size picker, quantity, and Add to Cart all live here
 // together — once a variant is selected, the price and stock shown above
@@ -319,8 +320,10 @@ export function AddToCartSection({ product, cashbackLabel }: { product: Product;
         </p>
       )}
 
+      {!isAffiliate && <PaymentBadges compact align="start" className="mt-3" />}
+
       {!isAffiliate && (
-        <p className={`text-[11px] text-[#8B8880] ${isDigital ? "mt-1.5 text-left" : "mt-3 text-center"}`}>
+        <p className={`text-[11px] text-[#8B8880] text-left ${isDigital ? "mt-1.5" : "mt-2.5"}`}>
           {cashbackLabel} back in your ODTSI Wallet on this order
         </p>
       )}

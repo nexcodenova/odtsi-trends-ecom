@@ -9,6 +9,7 @@ import { saveOrderRecord } from "@/lib/order-history";
 import { getBuyNowItem, clearBuyNowItem } from "@/lib/buy-now";
 import { cartSubtotal, type CartItem } from "@/lib/cart";
 import { trackInitiateCheckout } from "@/lib/tracking";
+import { PaymentBadges } from "./payment-badges";
 
 // Goes through this site's own /api/checkout so a signed-in shopper's
 // token (needed for wallet spending) never reaches client JS.
@@ -262,6 +263,8 @@ export function CheckoutContent({
           >
             {status === "loading" ? "Placing order..." : `Place Order — ${price(total)}`}
           </button>
+
+          <PaymentBadges />
         </form>
 
         <div className="h-fit rounded-2xl border border-black/10 p-5">

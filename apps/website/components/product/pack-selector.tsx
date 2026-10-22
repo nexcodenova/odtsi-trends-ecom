@@ -6,6 +6,7 @@ import { Check, Minus, Plus } from "lucide-react";
 import type { Product } from "@odtsi/exiuscart-client";
 import { addToCart } from "@/lib/cart";
 import { notifyAdded } from "@/lib/notify";
+import { PaymentBadges } from "@/components/checkout/payment-badges";
 import { formatCurrency, formatCurrencyParts } from "@odtsi/utils";
 
 // A distinct display face for the pricing/titles here, separate from the
@@ -197,7 +198,8 @@ export function PackSelector({ product, cashbackLabel }: { product: Product; cas
         >
           {!product.inStock ? "Out of Stock" : justAdded ? "Added to Cart" : "Add to Cart"}
         </button>
-        <p className="mt-3 text-center text-[11px] text-[#8B8880]">{cashbackLabel} back in your ODTSI Wallet on this order</p>
+        <PaymentBadges compact align="start" className="mt-3" />
+        <p className="mt-2.5 text-left text-[11px] text-[#8B8880]">{cashbackLabel} back in your ODTSI Wallet on this order</p>
       </div>
     </div>
   );
