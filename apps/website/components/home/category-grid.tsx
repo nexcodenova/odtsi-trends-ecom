@@ -34,7 +34,7 @@ export function CategoryGrid({ categories: allCategories }: CategoryGridProps) {
 
   const [page, setPage] = useState(0);
   // Mobile-first default so server and first client render match (no layout jump).
-  const [{ columns, rows }, setGrid] = useState({ columns: 4, rows: 3 });
+  const [{ columns: maxColumns, rows }, setGrid] = useState({ columns: MOBILE_GRID.columns, rows: MOBILE_GRID.rows });
 
   useEffect(() => {
     function update() {
@@ -45,7 +45,10 @@ export function CategoryGrid({ categories: allCategories }: CategoryGridProps) {
     return () => window.removeEventListener("resize", update);
   }, []);
 
-  const perPage = columns * rows;
+  // Fewer categories than slots → shrink the column count so the ones we
+  // have spread across the full width instead of leaving empty gaps.
+  const columns = Math.max(1, Math.min(maxColumns, categories.length));
+  const perPage = maxColumns * rows;
   const totalPages = Math.ceil(categories.length / perPage);
   const visible = categories.slice(page * perPage, page * perPage + perPage);
 
