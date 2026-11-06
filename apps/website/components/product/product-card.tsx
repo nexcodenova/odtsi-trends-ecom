@@ -10,6 +10,7 @@ import { addToCart } from "@/lib/cart";
 import { isInWishlist, toggleWishlist } from "@/lib/wishlist";
 import { notifyAdded } from "@/lib/notify";
 import { cheapestVariant, displayPrice } from "@/lib/product-price";
+import { SupplierProofLine, hasSupplierStats } from "@/components/product/supplier-proof";
 
 interface ProductCardProps {
   product: Product;
@@ -199,13 +200,19 @@ export function ProductCard({ product, compact, sale, discountBadge }: ProductCa
             details. */}
         {!compact && (
           <div className="mt-1.5 flex items-center justify-between gap-1.5 text-sm text-[#8B8880]">
-            <span className="flex items-center gap-1.5">
-              <span className="tracking-[1px] text-action">
-                {"★".repeat(Math.round(product.rating ?? 0))}
-                <span className="text-[#D8D5CE]">{"★".repeat(5 - Math.round(product.rating ?? 0))}</span>
+            {/* Supplier's "★ 4.8 (2,310) · 🔥 12,000+ sold" takes this row
+                when ExiusCart sends it; otherwise the store's own stars. */}
+            {hasSupplierStats(product.supplierProof) ? (
+              <SupplierProofLine proof={product.supplierProof} className="text-xs font-semibold text-[#4A4844]" />
+            ) : (
+              <span className="flex items-center gap-1.5">
+                <span className="tracking-[1px] text-action">
+                  {"★".repeat(Math.round(product.rating ?? 0))}
+                  <span className="text-[#D8D5CE]">{"★".repeat(5 - Math.round(product.rating ?? 0))}</span>
+                </span>
+                {!sale && (product.rating !== null ? `${product.rating.toFixed(1)} (${product.reviewCount ?? 0})` : "No reviews yet")}
               </span>
-              {!sale && (product.rating !== null ? `${product.rating.toFixed(1)} (${product.reviewCount ?? 0})` : "No reviews yet")}
-            </span>
+            )}
             {sale && product.viewCount !== null && (
               <span className="flex items-center gap-1 text-xs text-[#8B8880]">
                 <Eye size={12} />

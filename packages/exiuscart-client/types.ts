@@ -162,6 +162,26 @@ export interface Product {
   seoTitle: string | null;
   metaDescription: string | null;
   seoKeywords: string[];
+  // Supplier's sales/rating data (added 2026-11). Null when ExiusCart has
+  // none or the seller switched it off — hide everything it feeds then.
+  // Never goes into schema.org aggregateRating: Google only allows the
+  // store's own reviews there.
+  supplierProof: SupplierProof | null;
+}
+
+export interface SupplierProof {
+  // Pre-rounded by ExiusCart (e.g. "12,000+ sold") — show as-is.
+  soldLabel: string | null;
+  soldCount: number | null;
+  rating: number | null;
+  reviewCount: number | null;
+  positiveRate: number | null;
+  starCounts: Record<string, number>;
+  // Upper bound, shown as "Arrives in up to N days".
+  deliveryDays: number | null;
+  shipsFrom: string[];
+  sellingPoints: string[];
+  faq: ProductFaq[];
 }
 
 export interface BlogPost {

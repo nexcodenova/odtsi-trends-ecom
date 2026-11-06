@@ -1,6 +1,6 @@
 import { storeUrl } from "./config";
 import { getCategories } from "./categories";
-import type { Product, ProductFaq, ProductSpec, ProductType, ProductVariant, QuantityTier, ProductVideo } from "./types";
+import type { Product, ProductFaq, ProductSpec, ProductType, ProductVariant, QuantityTier, ProductVideo, SupplierProof } from "./types";
 
 interface RawFaq {
   question: string;
@@ -101,6 +101,46 @@ interface RawProduct {
   seo_title?: string | null;
   meta_description?: string | null;
   seo_keywords?: string[];
+  // Added 2026-11 — null when there's no data or it's switched off.
+  supplier_proof?: RawSupplierProof | null;
+}
+
+interface RawSupplierProof {
+  sold_label?: string | null;
+  sold_count?: number | null;
+  rating?: number | null;
+  review_count?: number | null;
+  positive_rate?: number | null;
+  star_counts?: Record<string, number> | null;
+  delivery_days?: number | null;
+  ships_from?: string[] | null;
+  selling_points?: string[] | null;
+  faq?: RawFaq[] | null;
+}
+
+function positiveNumber(v: unknown): number | null {
+  const n = typeof v === "string" ? Number(v) : v;
+  return typeof n === "number" && Number.isFinite(n) && n > 0 ? n : null;
+}
+
+function mapSupplierProof(raw: RawSupplierProof | null | undefined): SupplierProof | null {
+  if (!raw) return null;
+  const proof: SupplierProof = {
+    soldLabel: raw.sold_label?.trim() || null,
+    soldCount: positiveNumber(raw.sold_count),
+    rating: positiveNumber(raw.rating),
+    reviewCount: positiveNumber(raw.review_count),
+    positiveRate: positiveNumber(raw.positive_rate),
+    starCounts: raw.star_counts ?? {},
+    deliveryDays: positiveNumber(raw.delivery_days),
+    shipsFrom: (raw.ships_from ?? []).filter(Boolean),
+    sellingPoints: (raw.selling_points ?? []).map((s) => s.trim()).filter(Boolean),
+    faq: mapFaq(raw.faq ?? undefined).filter((f) => f.question && f.answer),
+  };
+  // An object with nothing usable in it is treated the same as null.
+  const hasAnything =
+    proof.soldLabel || proof.rating || proof.deliveryDays || proof.sellingPoints.length > 0 || proof.faq.length > 0;
+  return hasAnything ? proof : null;
 }
 
 function mapFaq(raw: RawFaq[] | undefined): ProductFaq[] {
@@ -206,6 +246,7 @@ function mapProduct(raw: RawProduct, categorySlugById: Map<string, string>): Pro
     seoTitle: raw.seo_title || null,
     metaDescription: raw.meta_description || null,
     seoKeywords: raw.seo_keywords ?? [],
+    supplierProof: mapSupplierProof(raw.supplier_proof),
   };
 }
 

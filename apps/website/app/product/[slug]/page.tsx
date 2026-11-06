@@ -19,6 +19,7 @@ import { RelatedProducts } from "@/components/product/related-products";
 import { DigitalTrustStrip } from "@/components/product/digital-trust-strip";
 import { PhysicalTrustStrip } from "@/components/product/physical-trust-strip";
 import { DigitalProductTabs } from "@/components/product/digital-product-tabs";
+import { SupplierProofLine, SupplierSellingPoints, hasSupplierStats } from "@/components/product/supplier-proof";
 import { parseProductDescription } from "@/lib/parse-product-description";
 import { getWalletCashbackLabel } from "@/lib/wallet-rate";
 import { displayPrice } from "@/lib/product-price";
@@ -78,6 +79,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 // Google Shopping / rich-result data. Only real values go in — rating is
 // left out until real reviews exist, same rule as the visible page.
+// aggregateRating uses the store's own reviews only, never supplierProof:
+// Google doesn't allow third-party/supplier ratings there.
 function productJsonLd(product: Product, price: number) {
   const url = `${SITE_URL}/product/${product.slug}`;
   const images = (product.images.length > 0 ? product.images : [product.imageUrl]).filter(Boolean);
@@ -136,6 +139,14 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   const { blocks: descriptionBlocks, images: descriptionImages } = product.description
     ? parseProductDescription(product.description)
     : { blocks: [], images: [] };
+  const supplierProof = product.supplierProof;
+  // Seller's own Q&A first, then the supplier's, skipping repeated questions.
+  const faq = [
+    ...product.faq,
+    ...(supplierProof?.faq ?? []).filter(
+      (s) => !product.faq.some((f) => f.question.trim().toLowerCase() === s.question.trim().toLowerCase()),
+    ),
+  ];
   const [reviews, cashbackLabel] = await Promise.all([loadReviews(slug), getWalletCashbackLabel()]);
 
   return (
@@ -227,6 +238,11 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           </h1>
           {product.tagline && <p className="mt-1.5 text-[14px] text-[#8B8880]">{product.tagline}</p>}
 
+          {hasSupplierStats(supplierProof) && (
+            <SupplierProofLine proof={supplierProof} className="mt-2 text-[13.5px] font-semibold text-[#4A4844]" />
+          )}
+          {supplierProof && <SupplierSellingPoints points={supplierProof.sellingPoints} />}
+
           <div className={`mt-4 ${isDigital ? "flex flex-1 flex-col" : ""}`}>
             <AddToCartSection product={product} cashbackLabel={cashbackLabel} />
           </div>
@@ -305,7 +321,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             description={product.description}
             descriptionBlocks={descriptionBlocks}
             descriptionImages={descriptionImages}
-            faq={product.faq}
+            faq={faq}
             reviews={reviews}
             tags={product.tags}
             specs={product.specs}
@@ -329,13 +345,13 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           {/* Real seller-written Q&A only — section skips entirely when
               ExiusCart hasn't sent any, same "honest empty" rule as
               everything else on this page. */}
-          {product.faq.length > 0 && (
+          {faq.length > 0 && (
             <div className="mt-10">
               <h2 className="text-center text-xs font-extrabold uppercase tracking-wide text-[#8B8880]">
                 Frequently Asked Questions
               </h2>
               <div className="mt-4">
-                <ProductFaqSection faq={product.faq} />
+                <ProductFaqSection faq={faq} />
               </div>
             </div>
           )}
