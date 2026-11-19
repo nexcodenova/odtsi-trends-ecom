@@ -3,7 +3,8 @@
 import { useState, useEffect, type MouseEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ShoppingCart, Check, Gift, Eye, Heart, ExternalLink } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ShoppingCart, Check, Gift, Heart, ExternalLink, Package, Tag } from "lucide-react";
 import type { Product, QuantityTier } from "@odtsi/exiuscart-client";
 import { Price } from "@/components/shared/price";
 import { addToCart } from "@/lib/cart";
@@ -67,7 +68,16 @@ export function ProductCard({ product, compact, sale, discountBadge }: ProductCa
     setSaved(isInWishlist(product.id));
   }, [product.id]);
 
+  const router = useRouter();
+  // First live offer's title (e.g. "Buy 2, get 1 free"), for the badge.
+  const offerTitle = isAffiliate ? null : (product.offers.find((o) => o.title)?.title ?? null);
+
   function handleAdd() {
+    // A bundle needs its part options chosen first — that's on its page.
+    if (product.isBundle) {
+      router.push(`/product/${product.slug}`);
+      return;
+    }
     addToCart({ productId: product.id, slug: product.slug, name: product.name, price, currency: product.currency, imageUrl, variantId: variant?.sku, exiusVariantId: variant?.id });
     notifyAdded({ type: "cart", name: product.name, imageUrl, price, currency: product.currency });
     setJustAdded(true);
@@ -161,6 +171,22 @@ export function ProductCard({ product, compact, sale, discountBadge }: ProductCa
             </span>
           )}
 
+          {(offerTitle || (product.isBundle && !isAffiliate)) && (
+            <span className="absolute bottom-2 left-2 right-2 flex flex-wrap gap-1">
+              {product.isBundle && !isAffiliate && (
+                <span className="flex items-center gap-1 rounded-full bg-primary px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide text-white">
+                  <Package size={11} /> Bundle
+                </span>
+              )}
+              {offerTitle && (
+                <span className="flex max-w-full items-center gap-1 truncate rounded-full bg-action px-2 py-1 text-[10px] font-extrabold text-action-ink shadow-sm">
+                  <Tag size={11} className="shrink-0" />
+                  <span className="truncate">{offerTitle}</span>
+                </span>
+              )}
+            </span>
+          )}
+
           {isAffiliate && (
             <span className="absolute left-2 top-2 rounded-full bg-primary px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide text-white">
               ODTSI Picks
@@ -193,11 +219,8 @@ export function ProductCard({ product, compact, sale, discountBadge }: ProductCa
             smaller button — and put the stock line and cart icon on one
             row instead of pinning the button to the bottom with empty
             space under it. */}
-        {/* Sale cards drop the rating text row entirely — just the stars —
-            and use the space it would've left on the right for the real
-            view count instead of a separate row, keeping the card short
-            on mobile where height matters more than these secondary
-            details. */}
+        {/* Sale cards drop the rating text — just the stars — keeping the
+            card short on mobile. */}
         {!compact && (
           <div className="mt-1.5 flex items-center justify-between gap-1.5 text-sm text-[#8B8880]">
             {/* Supplier's "★ 4.8 (2,310) · 🔥 12,000+ sold" takes this row
@@ -213,26 +236,14 @@ export function ProductCard({ product, compact, sale, discountBadge }: ProductCa
                 {!sale && (product.rating !== null ? `${product.rating.toFixed(1)} (${product.reviewCount ?? 0})` : "No reviews yet")}
               </span>
             )}
-            {sale && product.viewCount !== null && (
-              <span className="flex items-center gap-1 text-xs text-[#8B8880]">
-                <Eye size={12} />
-                {product.viewCount.toLocaleString()}
-              </span>
-            )}
           </div>
         )}
 
         {/* The default card's discount pill lives on this row, next to the
             stock status, instead of wrapping onto its own line under the
             price — one fewer line per card. */}
-        {!compact && !sale && (product.viewCount !== null || !isAffiliate || (hasDiscount && !badge)) && (
+        {!compact && !sale && (!isAffiliate || (hasDiscount && !badge)) && (
           <div className="mt-1 flex items-center gap-2.5 text-xs text-[#8B8880]">
-            {product.viewCount !== null && (
-              <span className="flex items-center gap-1.5">
-                <Eye size={13} />
-                {product.viewCount.toLocaleString()} views
-              </span>
-            )}
             {!isAffiliate && (
               <span className={`text-sm font-bold ${product.inStock ? "text-status" : "text-[#B9412E]"}`}>
                 {!product.inStock

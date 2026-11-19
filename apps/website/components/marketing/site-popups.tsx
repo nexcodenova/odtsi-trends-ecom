@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import Script from "next/script";
+import { usePathname } from "next/navigation";
 import {
-  getPopups,
+  SHOP_ID,
   getSignupForms,
   identifyShopper,
-  trackPopup,
   trackSignupFormImpression,
   submitSignupForm,
-  type Popup,
   type SignupForm,
 } from "@odtsi/exiuscart-client";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -16,12 +16,26 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-// Popups and signup forms built in the ExiusCart dashboard. Loaded in the
-// browser (not in the layout) so they never force every page dynamic.
-// Only one shows at a time, each at most once per visitor, and nothing
-// renders at all when the seller hasn't made any.
+// Marketing popups and signup forms built in the ExiusCart dashboard.
+//
+// Popups (email capture, exit intent, spin wheel) are shown by ExiusCart's
+// own popup.js: it applies the seller's page/device/frequency rules,
+// re-checks them on every client-side page change (it reads the URL, so no
+// data-page attribute — that would go stale between pages), shows one at a
+// time, and holds back while any of our dialogs is open (see dialog.tsx).
+//
+// Signup forms stay ours, below. Each shows at most once per visitor, and
+// never on top of an ExiusCart popup.
 
-type Item = { kind: "popup"; popup: Popup } | { kind: "form"; form: SignupForm };
+declare global {
+  interface Window {
+    ExiusCartPopups?: { pause(): void; resume(): void; refresh(): void };
+  }
+}
+
+const POPUP_SCRIPT = "https://api.exiuscart.com/api/v1/widget/popup.js";
+// No popups over payment or download pages.
+const QUIET_PATHS = ["/checkout", "/download"];
 
 const SEEN_KEY = "odtsi_seen_marketing";
 
@@ -39,132 +53,104 @@ function markSeen(id: string) {
   } catch {}
 }
 
-function itemKey(item: Item) {
-  return item.kind === "popup" ? `popup-${item.popup.id}` : `form-${item.form.id}`;
+function exiusPopupOpen() {
+  return document.querySelector(".exc-popup") !== null;
 }
 
 export function SitePopups() {
-  const [active, setActive] = useState<Item | null>(null);
-  const activeRef = useRef<Item | null>(null);
+  const pathname = usePathname();
+  const quiet = QUIET_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  const quietRef = useRef(quiet);
+  quietRef.current = quiet;
+
+  useEffect(() => {
+    if (quiet) window.ExiusCartPopups?.pause();
+    else window.ExiusCartPopups?.resume();
+  }, [quiet]);
+
+  const [active, setActive] = useState<SignupForm | null>(null);
+  const activeRef = useRef<SignupForm | null>(null);
   activeRef.current = active;
-  // Items that came due while another was open — shown after it closes.
-  const queueRef = useRef<Item[]>([]);
+  // Forms that came due while something else was open.
+  const queueRef = useRef<SignupForm[]>([]);
+
+  function open(form: SignupForm) {
+    markSeen(`form-${form.id}`);
+    trackSignupFormImpression(form.id);
+    setActive(form);
+  }
+
+  function showNextQueued() {
+    if (activeRef.current || quietRef.current || exiusPopupOpen()) return;
+    const next = queueRef.current.shift();
+    if (next) open(next);
+  }
 
   useEffect(() => {
     let cancelled = false;
     const timers: ReturnType<typeof setTimeout>[] = [];
-    let exitHandler: ((e: MouseEvent) => void) | null = null;
 
-    function show(item: Item) {
-      if (cancelled || activeRef.current) {
-        // Something's already open — try again once it's closed.
-        if (!cancelled) queueRef.current.push(item);
+    function show(form: SignupForm) {
+      if (cancelled) return;
+      if (activeRef.current || quietRef.current || exiusPopupOpen()) {
+        queueRef.current.push(form);
         return;
       }
-      markSeen(itemKey(item));
-      if (item.kind === "popup") trackPopup(item.popup.id, "impression");
-      else trackSignupFormImpression(item.form.id);
-      setActive(item);
+      open(form);
     }
 
-    Promise.allSettled([getPopups(), getSignupForms()]).then(([popups, forms]) => {
-      if (cancelled) return;
-      const seen = new Set(readSeen());
-      const items: Item[] = [
-        ...(popups.status === "fulfilled" ? popups.value.map((popup) => ({ kind: "popup" as const, popup })) : []),
-        ...(forms.status === "fulfilled" ? forms.value.map((form) => ({ kind: "form" as const, form })) : []),
-      ].filter((item) => !seen.has(itemKey(item)));
-
-      for (const item of items) {
-        if (item.kind === "popup" && item.popup.type.includes("exit")) {
-          // Exit intent: the cursor leaving through the top of the window.
-          if (!exitHandler) {
-            exitHandler = (e: MouseEvent) => {
-              if (e.clientY > 0) return;
-              document.removeEventListener("mouseout", exitHandler!);
-              show(item);
-            };
-            document.addEventListener("mouseout", exitHandler);
-          }
-          continue;
+    getSignupForms()
+      .then((forms) => {
+        if (cancelled) return;
+        const seen = new Set(readSeen());
+        for (const form of forms.filter((f) => !seen.has(`form-${f.id}`))) {
+          timers.push(setTimeout(() => show(form), Math.max(form.delaySeconds, 0) * 1000));
         }
-        const delay = item.kind === "popup" ? item.popup.delaySeconds : item.form.delaySeconds;
-        timers.push(setTimeout(() => show(item), Math.max(delay, 0) * 1000));
-      }
-    });
+      })
+      .catch(() => {});
+
+    // A queued form waits for the ExiusCart popup to close, plus a pause.
+    const onExiusClosed = () => timers.push(setTimeout(showNextQueued, 3000));
+    document.addEventListener("exiuscart:popup:closed", onExiusClosed);
 
     return () => {
       cancelled = true;
       timers.forEach(clearTimeout);
-      if (exitHandler) document.removeEventListener("mouseout", exitHandler);
+      document.removeEventListener("exiuscart:popup:closed", onExiusClosed);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Leaving checkout releases anything that queued up there.
+  useEffect(() => {
+    if (!quiet) {
+      const t = setTimeout(showNextQueued, 3000);
+      return () => clearTimeout(t);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quiet]);
 
   function close() {
     setActive(null);
-    const next = queueRef.current.shift();
-    if (next) {
-      setTimeout(() => {
-        markSeen(itemKey(next));
-        if (next.kind === "popup") trackPopup(next.popup.id, "impression");
-        else trackSignupFormImpression(next.form.id);
-        setActive(next);
-      }, 1500);
-    }
+    setTimeout(showNextQueued, 1500);
   }
 
   return (
-    <Dialog open={active !== null} onOpenChange={(open) => !open && close()}>
-      <DialogContent className="overflow-hidden p-0">
-        {active?.kind === "popup" && <PopupBody popup={active.popup} onDone={close} />}
-        {active?.kind === "form" && <SignupFormBody form={active.form} />}
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function PopupBody({ popup, onDone }: { popup: Popup; onDone: () => void }) {
-  const [copied, setCopied] = useState(false);
-
-  return (
-    <div>
-      {popup.imageUrl && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={popup.imageUrl} alt="" className="max-h-56 w-full object-cover" />
+    <>
+      {SHOP_ID && (
+        <Script
+          src={POPUP_SCRIPT}
+          data-shop-id={SHOP_ID}
+          strategy="lazyOnload"
+          onLoad={() => {
+            if (quietRef.current) window.ExiusCartPopups?.pause();
+          }}
+        />
       )}
-      <div className="flex flex-col gap-3 p-6 text-center">
-        <DialogTitle className="text-xl leading-snug">{popup.title}</DialogTitle>
-        {popup.message ? (
-          <DialogDescription className="leading-relaxed">{popup.message}</DialogDescription>
-        ) : (
-          <DialogDescription className="sr-only">{popup.title}</DialogDescription>
-        )}
-        {popup.discountCode && (
-          <button
-            type="button"
-            onClick={() => {
-              navigator.clipboard?.writeText(popup.discountCode!).catch(() => {});
-              setCopied(true);
-              trackPopup(popup.id, "click");
-            }}
-            className="mx-auto rounded-xl border-2 border-dashed border-primary px-5 py-2 font-mono text-lg font-extrabold tracking-widest text-primary"
-          >
-            {copied ? "Copied!" : popup.discountCode}
-          </button>
-        )}
-        {popup.buttonText && (
-          <Button
-            onClick={() => {
-              trackPopup(popup.id, "click");
-              if (popup.buttonLink) window.location.href = popup.buttonLink;
-              else onDone();
-            }}
-          >
-            {popup.buttonText}
-          </Button>
-        )}
-      </div>
-    </div>
+      <Dialog open={active !== null} onOpenChange={(isOpen) => !isOpen && close()}>
+        <DialogContent className="overflow-hidden p-0">{active && <SignupFormBody form={active} />}</DialogContent>
+      </Dialog>
+    </>
   );
 }
 

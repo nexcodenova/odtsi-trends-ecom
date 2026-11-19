@@ -4,10 +4,12 @@ import { useEffect, useRef, useState, type FocusEvent, type FormEvent } from "re
 import Link from "next/link";
 import { useCart } from "@/hooks/use-cart";
 import { formatCurrency } from "@odtsi/utils";
-import { identifyShopper, notifyCheckoutStarted, previewDiscount, type CheckoutPayload, type CheckoutResult } from "@odtsi/exiuscart-client";
+import { identifyShopper, notifyCheckoutStarted, previewCart, type CheckoutPayload, type CheckoutResult } from "@odtsi/exiuscart-client";
 import { saveOrderRecord } from "@/lib/order-history";
 import { getBuyNowItem, clearBuyNowItem } from "@/lib/buy-now";
-import { cartSubtotal, type CartItem } from "@/lib/cart";
+import { cartSubtotal, toCheckoutItems, type CartItem } from "@/lib/cart";
+import { useCartPreview } from "@/hooks/use-cart-preview";
+import { OfferHints, OfferLines } from "@/components/cart/offer-savings";
 import { trackInitiateCheckout } from "@/lib/tracking";
 import { PaymentBadges } from "./payment-badges";
 
@@ -51,14 +53,16 @@ export function CheckoutContent({
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
-  // Discount preview — same validation ExiusCart runs at checkout, so
-  // "applied" here means it will really apply (it's re-checked there).
+  // Offers + code priced by ExiusCart's own engine (the one checkout
+  // runs), so what's shown here is what checkout will charge.
   const [discountInput, setDiscountInput] = useState("");
-  const [discount, setDiscount] = useState<{ code: string; amount: number } | null>(null);
+  const [appliedCode, setAppliedCode] = useState<string | null>(null);
   const [discountStatus, setDiscountStatus] = useState<{ kind: "idle" | "loading" } | { kind: "error"; message: string }>({
     kind: "idle",
   });
-  const discountAmount = discount ? Math.min(discount.amount, subtotal) : 0;
+  const { preview, codeError } = useCartPreview(items, { code: appliedCode, email: customer?.email });
+  const codeDiscount = preview?.code ? preview.codeDiscount : 0;
+  const discountAmount = preview ? Math.min(preview.totalDiscount, subtotal) : 0;
   const afterDiscount = Math.max(subtotal - discountAmount, 0);
 
   // Only offered when the wallet is in the same currency as the cart —
@@ -73,11 +77,11 @@ export function CheckoutContent({
     if (!code) return;
     setDiscountStatus({ kind: "loading" });
     try {
-      const preview = await previewDiscount(code, subtotal);
-      setDiscount({ code: preview.code, amount: preview.discount });
+      await previewCart(toCheckoutItems(items), { code, email: customer?.email });
+      setAppliedCode(code);
       setDiscountStatus({ kind: "idle" });
     } catch (err) {
-      setDiscount(null);
+      setAppliedCode(null);
       setDiscountStatus({ kind: "error", message: err instanceof Error ? err.message : "That code couldn't be applied." });
     }
   }
@@ -129,7 +133,7 @@ export function CheckoutContent({
     try {
       const origin = window.location.origin;
       const result = await submitCheckout({
-        items: items.map((item) => ({ productId: item.productId, quantity: item.quantity, variantId: item.exiusVariantId })),
+        items: toCheckoutItems(items),
         customer: {
           name: String(form.get("name")),
           email,
@@ -150,7 +154,8 @@ export function CheckoutContent({
         // reads the most recently saved order record instead.
         returnUrl: `${origin}/checkout/return`,
         cancelUrl: `${origin}/checkout/cancel`,
-        discountCode: discount?.code,
+        // Only a code that still applies.
+        discountCode: appliedCode && !codeError ? appliedCode : undefined,
         useWalletAmount: walletAmount > 0 ? Math.round(walletAmount * 100) / 100 : undefined,
       });
 
@@ -279,6 +284,7 @@ export function CheckoutContent({
               </div>
             ))}
           </div>
+          {preview && <OfferHints hints={preview.hints} className="mt-3" />}
           <div className="mt-4 flex flex-col gap-2 border-t border-black/10 pt-4">
             <div className="flex gap-2">
               <input
@@ -303,6 +309,10 @@ export function CheckoutContent({
               </button>
             </div>
             {discountStatus.kind === "error" && <p className="text-xs font-bold text-red-600">{discountStatus.message}</p>}
+            {appliedCode && codeError && <p className="text-xs font-bold text-red-600">{codeError}</p>}
+            {appliedCode && !codeError && preview?.codeNote && (
+              <p className="text-xs font-semibold text-[#716D67]">{preview.codeNote}</p>
+            )}
 
             {walletUsable && (
               <label className="flex cursor-pointer items-center gap-2 text-sm text-[#4A4844]">
@@ -317,14 +327,15 @@ export function CheckoutContent({
               <span className="text-[#4A4844]">Subtotal</span>
               <span className="font-bold text-[#16161A]">{price(subtotal)}</span>
             </div>
-            {discount && (
+            {preview && <OfferLines preview={preview} price={price} />}
+            {appliedCode && (
               <div className="flex justify-between">
                 <span className="text-[#4A4844]">
-                  Discount ({discount.code}){" "}
+                  Code ({appliedCode.toUpperCase()}){" "}
                   <button
                     type="button"
                     onClick={() => {
-                      setDiscount(null);
+                      setAppliedCode(null);
                       setDiscountInput("");
                     }}
                     className="text-xs font-bold text-primary hover:underline"
@@ -332,7 +343,7 @@ export function CheckoutContent({
                     Remove
                   </button>
                 </span>
-                <span className="font-bold text-status">-{price(discountAmount)}</span>
+                <span className="font-bold text-status">{codeDiscount > 0 ? `-${price(codeDiscount)}` : "Not applied"}</span>
               </div>
             )}
             {walletAmount > 0 && (

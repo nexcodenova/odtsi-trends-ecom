@@ -9,9 +9,7 @@ import { AddToCartSection } from "@/components/product/add-to-cart-section";
 import { BestSellerBadge } from "@/components/product/best-seller-badge";
 import { WishlistButton } from "@/components/product/wishlist-button";
 import { PackSelector } from "@/components/product/pack-selector";
-import { BundleOfferSection } from "@/components/product/bundle-offer-section";
 import { ProductVideos } from "@/components/product/product-videos";
-import { TrustSignals } from "@/components/product/trust-signals";
 import { DescriptionSection } from "@/components/product/description-section";
 import { ReviewsSection } from "@/components/product/reviews-section";
 import { ProductFaqSection } from "@/components/product/product-faq";
@@ -227,8 +225,6 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             </div>
           )}
 
-          <TrustSignals viewCount={product.viewCount} unitsSold={product.unitsSold} />
-
           <h1
             className={`mt-2 font-extrabold leading-tight tracking-tight text-[#16161A] ${
               isDigital ? "text-[22px] sm:text-[26px]" : "text-[27px] sm:text-[32px]"
@@ -276,8 +272,6 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
               Delivered by email — a secure download link and access code are sent once your payment is confirmed.
             </p>
           )}
-
-          {!isAffiliate && product.bundle && <BundleOfferSection product={product} bundle={product.bundle} />}
         </div>
       </div>
 

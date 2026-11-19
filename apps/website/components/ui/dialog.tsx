@@ -37,6 +37,8 @@ const DialogContent = React.forwardRef<
     <DialogOverlay />
     <DialogPrimitive.Content
       ref={ref}
+      // ExiusCart's popup.js holds its popups while this is on screen.
+      data-exiuscart-popups-wait=""
       className={cn(
         "fixed left-[50%] top-[50%] z-[100] grid w-[min(90vw,32rem)] translate-x-[-50%] translate-y-[-50%] scale-95 gap-4 rounded-2xl border border-black/10 bg-white opacity-0 shadow-xl transition-all duration-200 data-[state=open]:scale-100 data-[state=open]:opacity-100",
         className,

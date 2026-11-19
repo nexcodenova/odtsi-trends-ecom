@@ -1,7 +1,7 @@
 export * from "./types";
 export { getCategories } from "./categories";
 export { getProducts, getProduct } from "./products";
-export { createCheckout, lookupOrder, previewDiscount } from "./orders";
+export { createCheckout, lookupOrder, previewCart } from "./orders";
 export { signUp, signIn, type AuthResult } from "./auth";
 export {
   getWallet,

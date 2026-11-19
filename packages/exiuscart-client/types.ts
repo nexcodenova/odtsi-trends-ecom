@@ -10,24 +10,76 @@ export interface Category {
   parentId: string | null;
 }
 
-export interface BundleOfferItem {
-  productId: string;
-  slug: string;
-  name: string;
-  imageUrl: string;
-  price: number;
+// A bundle product's parts, from ExiusCart's `kit` (detail endpoint only;
+// null when the product isn't a bundle). Prices are in the store currency.
+export interface KitOption {
+  variantId: string;
+  title: string;
+  size: string | null;
+  color: string | null;
+  colorHex: string | null;
+  stockCount: number | null;
 }
 
-export interface BundleOffer {
-  id: string;
-  // The other product(s) in the bundle — not including the current product.
-  items: BundleOfferItem[];
-  // Real discounted total for buying everything together. This is a preview
-  // only — the trusted price is recalculated by ExiusCart at checkout, never
-  // taken as-is from the frontend.
-  bundlePrice: number;
-  regularTotal: number;
+export interface KitPart {
+  productId: string;
+  name: string;
+  slug: string | null;
+  imageUrl: string;
+  quantity: number;
+  price: number;
+  // Empty when the part has no choice — checkout picks it automatically.
+  options: KitOption[];
 }
+
+export interface ProductKit {
+  parts: KitPart[];
+  // How many whole bundles the parts' stock makes.
+  inStock: number;
+  // The parts bought on their own, and that minus the bundle price.
+  partsValue: number;
+  saving: number;
+}
+
+// One option picked for one part — sent to checkout as bundle_selections.
+export interface BundleSelection {
+  componentProductId: string;
+  variantId: string;
+}
+
+// Seller-made offers (ExiusCart's offers[]). Checkout prices them itself;
+// these are only for showing the offer before then.
+export interface OfferTier {
+  qty: number;
+  percent: number;
+}
+
+export interface OfferGetProduct {
+  productId: string;
+  title: string;
+  imageUrl: string | null;
+  price: number | null;
+  slug: string | null;
+}
+
+export type ProductOffer =
+  | { id: string; kind: "quantity_breaks"; title: string; tiers: OfferTier[] }
+  | {
+      id: string;
+      kind: "bxgy";
+      title: string;
+      buyQty: number;
+      getQty: number;
+      getPercent: number;
+      // true = the free/discounted units are this same product.
+      same: boolean;
+      // The other product(s) Y, when same is false. Full details on the
+      // product page; the list endpoint only sends their ids.
+      get: OfferGetProduct[];
+      getProductIds: string[];
+    }
+  // Any other kind (e.g. a free gift) — shown by title only.
+  | { id: string; kind: "other"; rawKind: string; title: string };
 
 export interface QuantityTier {
   quantity: number;
@@ -124,7 +176,13 @@ export interface Product {
   categorySlug: string;
   inStock: boolean;
   stockCount: number | null;
-  bundle: BundleOffer | null;
+  // True for a bundle product (also sent on the list endpoint, for badges).
+  isBundle: boolean;
+  // The bundle's parts — product detail only, null otherwise.
+  kit: ProductKit | null;
+  // Live offers covering this product. When a quantity-break offer covers
+  // it, quantityTiers comes back empty (the offer replaces them).
+  offers: ProductOffer[];
   // Volume pricing on this one product (buy 1 for $10, buy 4 for $35, etc.)
   // Empty when the product just has a normal single price.
   quantityTiers: QuantityTier[];
@@ -237,6 +295,8 @@ export interface ProductFaq {
 export interface CartItem {
   productId: string;
   quantity: number;
+  // Bundle products only: the option picked for each part with a choice.
+  bundleSelections?: BundleSelection[];
   // ExiusCart's real numeric variant id (size/color) — without it checkout
   // prices and decrements the base product instead of the chosen variant.
   variantId?: string;
@@ -276,9 +336,34 @@ export interface CheckoutPayload {
   useWalletAmount?: number;
 }
 
-export interface DiscountPreview {
-  code: string;
-  discount: number;
+// POST /discounts/preview — the same engine checkout runs, with no order.
+export interface CartPreviewOffer {
+  id: string;
+  title: string;
+  amount: number;
+  freeShipping: boolean;
+}
+
+export interface CartPreviewGift {
+  title: string;
+  imageUrl: string | null;
+  quantity: number;
+}
+
+export interface CartPreview {
+  // The code that applied, or null (none sent, or it lost to a better offer).
+  code: string | null;
+  codeDiscount: number;
+  // Set when a code was sent but didn't apply alongside the offers.
+  codeNote: string | null;
+  offers: CartPreviewOffer[];
+  // Everything off the subtotal: code + offers.
+  totalDiscount: number;
+  freeShipping: boolean;
+  // Added to the order by checkout at no charge — never put in the cart.
+  gifts: CartPreviewGift[];
+  // "Add 1 more to save 15%" style nudges, already worded.
+  hints: string[];
   total: number | null;
 }
 

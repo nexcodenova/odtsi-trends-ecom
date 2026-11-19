@@ -1,6 +1,19 @@
 import { storeUrl } from "./config";
 import { getCategories } from "./categories";
-import type { Product, ProductFaq, ProductSpec, ProductType, ProductVariant, QuantityTier, ProductVideo, SupplierProof } from "./types";
+import type {
+  KitPart,
+  OfferGetProduct,
+  Product,
+  ProductFaq,
+  ProductKit,
+  ProductOffer,
+  ProductSpec,
+  ProductType,
+  ProductVariant,
+  QuantityTier,
+  ProductVideo,
+  SupplierProof,
+} from "./types";
 
 interface RawFaq {
   question: string;
@@ -103,6 +116,57 @@ interface RawProduct {
   seo_keywords?: string[];
   // Added 2026-11 — null when there's no data or it's switched off.
   supplier_proof?: RawSupplierProof | null;
+  // Added 2026-11-19. kit is on the detail endpoint only; is_bundle and
+  // offers are on both (the list sends get_product_ids instead of get).
+  is_bundle?: boolean;
+  kit?: RawKit | null;
+  offers?: RawOffer[];
+}
+
+interface RawKitOption {
+  variant_id: number;
+  title?: string | null;
+  size?: string | null;
+  color?: string | null;
+  color_hex?: string | null;
+  quantity?: number | null;
+}
+
+interface RawKit {
+  parts?: {
+    component_product_id: number;
+    component_product_name?: string;
+    quantity?: number;
+    image?: string | null;
+    slug?: string | null;
+    price?: number;
+    options?: RawKitOption[];
+  }[];
+  in_stock?: number;
+  parts_value?: number;
+  saving?: number;
+}
+
+interface RawOfferGet {
+  id: number;
+  title?: string;
+  name?: string;
+  image?: string | null;
+  price?: number | null;
+  slug?: string | null;
+}
+
+interface RawOffer {
+  id: number;
+  kind: string;
+  title?: string | null;
+  tiers?: { qty: number; percent: number }[];
+  buy_qty?: number;
+  get_qty?: number;
+  get_percent?: number;
+  same?: boolean;
+  get?: RawOfferGet | RawOfferGet[] | null;
+  get_product_ids?: number[];
 }
 
 interface RawSupplierProof {
@@ -141,6 +205,72 @@ function mapSupplierProof(raw: RawSupplierProof | null | undefined): SupplierPro
   const hasAnything =
     proof.soldLabel || proof.rating || proof.deliveryDays || proof.sellingPoints.length > 0 || proof.faq.length > 0;
   return hasAnything ? proof : null;
+}
+
+function mapKit(raw: RawKit | null | undefined): ProductKit | null {
+  if (!raw || !raw.parts || raw.parts.length === 0) return null;
+  const parts: KitPart[] = raw.parts.map((p) => ({
+    productId: String(p.component_product_id),
+    name: p.component_product_name ?? "",
+    slug: p.slug ?? null,
+    imageUrl: p.image ?? "",
+    quantity: p.quantity ?? 1,
+    price: Number(p.price ?? 0),
+    options: (p.options ?? []).map((o) => ({
+      variantId: String(o.variant_id),
+      title: o.title || [o.size, o.color].filter(Boolean).join(" / ") || "Option",
+      size: o.size ?? null,
+      color: o.color ?? null,
+      colorHex: o.color_hex ?? null,
+      stockCount: o.quantity ?? null,
+    })),
+  }));
+  return {
+    parts,
+    inStock: Math.max(0, Number(raw.in_stock ?? 0)),
+    partsValue: Number(raw.parts_value ?? 0),
+    saving: Number(raw.saving ?? 0),
+  };
+}
+
+function mapOfferGet(raw: RawOffer["get"]): OfferGetProduct[] {
+  if (!raw) return [];
+  return (Array.isArray(raw) ? raw : [raw]).map((g) => ({
+    productId: String(g.id),
+    title: g.title ?? g.name ?? "",
+    imageUrl: g.image ?? null,
+    price: g.price ?? null,
+    slug: g.slug ?? null,
+  }));
+}
+
+function mapOffers(raw: RawOffer[] | undefined): ProductOffer[] {
+  return (raw ?? []).flatMap((o): ProductOffer[] => {
+    const id = String(o.id);
+    const title = o.title?.trim() || "";
+    if (o.kind === "quantity_breaks") {
+      const tiers = (o.tiers ?? []).filter((t) => t.qty > 0 && t.percent > 0).sort((a, b) => a.qty - b.qty);
+      return tiers.length > 0 ? [{ id, kind: "quantity_breaks", title, tiers }] : [];
+    }
+    if (o.kind === "bxgy") {
+      if (!o.buy_qty || !o.get_qty) return [];
+      const get = mapOfferGet(o.get);
+      return [
+        {
+          id,
+          kind: "bxgy",
+          title,
+          buyQty: o.buy_qty,
+          getQty: o.get_qty,
+          getPercent: o.get_percent ?? 100,
+          same: o.same ?? get.length === 0,
+          get,
+          getProductIds: (o.get_product_ids ?? get.map((g) => Number(g.productId))).map(String),
+        },
+      ];
+    }
+    return title ? [{ id, kind: "other", rawKind: o.kind, title }] : [];
+  });
 }
 
 function mapFaq(raw: RawFaq[] | undefined): ProductFaq[] {
@@ -222,8 +352,9 @@ function mapProduct(raw: RawProduct, categorySlugById: Map<string, string>): Pro
         : "uncategorized"),
     inStock: raw.in_stock,
     stockCount: raw.quantity,
-    // Bundle isn't in the public API yet — stays null until it is.
-    bundle: null,
+    isBundle: raw.is_bundle ?? !!raw.kit,
+    kit: mapKit(raw.kit),
+    offers: mapOffers(raw.offers),
     quantityTiers: mapQuantityTiers(raw.quantity_tiers),
     // Real fields now, confirmed live 2026-09-03 — null/0 until a product
     // actually has reviews, never a fabricated number.

@@ -3,7 +3,7 @@
 // this is how guest carts work on most real e-commerce sites.
 
 import { trackAddToCart } from "@/lib/tracking";
-import { trackStorefrontEvent } from "@odtsi/exiuscart-client";
+import { trackStorefrontEvent, type BundleSelection, type CartItem as CheckoutItem } from "@odtsi/exiuscart-client";
 
 export interface CartItem {
   productId: string;
@@ -31,6 +31,19 @@ export interface CartItem {
   // so the order is priced and stock-decremented against the variant the
   // shopper actually picked. Unset for pack tiers and plain products.
   exiusVariantId?: string;
+  // Bundle products: the option picked for each part. The same bundle with
+  // different picks is a separate line (its variantId encodes the picks).
+  bundleSelections?: BundleSelection[];
+}
+
+// What /checkout and /discounts/preview need from a cart line.
+export function toCheckoutItems(items: CartItem[]): CheckoutItem[] {
+  return items.map((item) => ({
+    productId: item.productId,
+    quantity: item.quantity,
+    variantId: item.exiusVariantId,
+    bundleSelections: item.bundleSelections,
+  }));
 }
 
 const CART_KEY = "odtsi_cart";

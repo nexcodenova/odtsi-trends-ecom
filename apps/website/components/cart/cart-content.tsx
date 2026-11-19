@@ -6,12 +6,18 @@ import { Minus, Plus, X, ShoppingCart } from "lucide-react";
 import { useCart } from "@/hooks/use-cart";
 import { updateQuantity, removeFromCart } from "@/lib/cart";
 import { formatCurrency } from "@odtsi/utils";
+import { useCartPreview } from "@/hooks/use-cart-preview";
+import { OfferHints, OfferLines } from "./offer-savings";
 
 export function CartContent() {
   const { items, subtotal } = useCart();
   // A shop only really has one active base currency, so the subtotal
   // borrows the first line's — each line still shows its own regardless.
   const subtotalCurrency = items[0]?.currency ?? "USD";
+  const price = (amount: number) => formatCurrency(amount, subtotalCurrency);
+  // Offers are priced by ExiusCart's own engine (same as checkout).
+  const { preview } = useCartPreview(items);
+  const offerDiscount = preview ? Math.min(preview.totalDiscount, subtotal) : 0;
 
   if (items.length === 0) {
     return (
@@ -51,6 +57,9 @@ export function CartContent() {
               </Link>
               <p className="mt-1 text-sm font-extrabold text-primary">{formatCurrency(item.price, item.currency)}</p>
               {item.step && item.step > 1 && <p className="mt-0.5 text-xs text-[#8B8880]">Pack of {item.step}</p>}
+              {item.bundleSelections && item.bundleSelections.length > 0 && (
+                <p className="mt-0.5 text-xs text-[#8B8880]">Bundle</p>
+              )}
             </div>
 
             <div className="flex items-center rounded-xl border border-black/10">
@@ -85,9 +94,25 @@ export function CartContent() {
         ))}
       </div>
 
-      <div className="mt-8 flex items-center justify-between border-t border-black/10 pt-6">
-        <span className="text-base font-bold text-[#16161A]">Subtotal</span>
-        <span className="text-xl font-extrabold text-primary">{formatCurrency(subtotal, subtotalCurrency)}</span>
+      {preview && <OfferHints hints={preview.hints} className="mt-5" />}
+
+      <div className="mt-6 flex flex-col gap-2 border-t border-black/10 pt-6 text-sm">
+        {preview && (preview.offers.length > 0 || preview.gifts.length > 0) && (
+          <>
+            <div className="flex justify-between">
+              <span className="text-[#4A4844]">Items</span>
+              <span className="font-bold text-[#16161A]">{price(subtotal)}</span>
+            </div>
+            <OfferLines preview={preview} price={price} />
+          </>
+        )}
+        <div className="flex items-center justify-between">
+          <span className="text-base font-bold text-[#16161A]">Subtotal</span>
+          <span className="text-xl font-extrabold text-primary">{price(subtotal - offerDiscount)}</span>
+        </div>
+        {offerDiscount > 0 && (
+          <p className="text-right text-[13px] font-bold text-status">You save {price(offerDiscount)}</p>
+        )}
       </div>
 
       <Link

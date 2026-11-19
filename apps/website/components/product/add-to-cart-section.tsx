@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Minus, Plus, Check, ExternalLink, CheckCircle2, ShoppingCart } from "lucide-react";
-import { trackStorefrontEvent, type Product, type ProductVariant } from "@odtsi/exiuscart-client";
+import { trackStorefrontEvent, type OfferGetProduct, type Product, type ProductVariant } from "@odtsi/exiuscart-client";
 import { addToCart } from "@/lib/cart";
 import { setBuyNowItem } from "@/lib/buy-now";
 import { notifyAdded, notifyVariantImage } from "@/lib/notify";
@@ -13,6 +13,8 @@ import { cheapestVariant } from "@/lib/product-price";
 import { getSpecIcon } from "@/lib/spec-icons";
 import { trackViewContent } from "@/lib/tracking";
 import { PaymentBadges } from "@/components/checkout/payment-badges";
+import { KitPicker, ProductOffers, offerSaving } from "@/components/product/product-offers";
+import { formatCurrency } from "@odtsi/utils";
 
 // Price, stock, color/size picker, quantity, and Add to Cart all live here
 // together — once a variant is selected, the price and stock shown above
@@ -35,6 +37,20 @@ export function AddToCartSection({ product, cashbackLabel }: { product: Product;
   );
   const [quantity, setQuantity] = useState(1);
   const [justAdded, setJustAdded] = useState(false);
+
+  // Bundle products: one pick per part. Parts with a single option are
+  // pre-picked (checkout would pick them anyway).
+  const kit = isAffiliate ? null : product.kit;
+  const [kitPicks, setKitPicks] = useState<Record<string, string>>(() => {
+    const picks: Record<string, string> = {};
+    for (const part of kit?.parts ?? []) {
+      const only = part.options.length === 1 ? part.options[0] : undefined;
+      if (only) picks[part.productId] = only.variantId;
+    }
+    return picks;
+  });
+  const missingKitPick = kit?.parts.find((p) => p.options.length > 1 && !kitPicks[p.productId]) ?? null;
+  const offers = isAffiliate ? [] : product.offers;
 
   const colors = useMemo(() => {
     const seen = new Map<string, ProductVariant>();
@@ -72,8 +88,9 @@ export function AddToCartSection({ product, cashbackLabel }: { product: Product;
   }
 
   const currentPrice = selectedVariant?.price ?? product.price;
-  const inStock = selectedVariant ? selectedVariant.inStock : product.inStock;
-  const maxQuantity = selectedVariant ? selectedVariant.stockCount : product.stockCount;
+  const inStock = kit ? product.inStock && kit.inStock > 0 : selectedVariant ? selectedVariant.inStock : product.inStock;
+  const maxQuantity = kit ? kit.inStock : selectedVariant ? selectedVariant.stockCount : product.stockCount;
+  const estimatedSaving = offerSaving(offers, currentPrice, quantity);
   const hasDiscount = product.compareAtPrice !== null && product.compareAtPrice > currentPrice;
   const savings = hasDiscount ? product.compareAtPrice! - currentPrice : 0;
 
@@ -92,6 +109,27 @@ export function AddToCartSection({ product, cashbackLabel }: { product: Product;
   }, [product.id]);
 
   function currentLineItem() {
+    if (kit) {
+      const bundleSelections = kit.parts.flatMap((p) => {
+        const variantId = kitPicks[p.productId];
+        return variantId ? [{ componentProductId: p.productId, variantId }] : [];
+      });
+      const pickedLabels = kit.parts
+        .filter((p) => p.options.length > 1 && kitPicks[p.productId])
+        .map((p) => p.options.find((o) => o.variantId === kitPicks[p.productId])?.title)
+        .filter(Boolean);
+      return {
+        productId: product.id,
+        slug: product.slug,
+        name: pickedLabels.length > 0 ? `${product.name} — ${pickedLabels.join(", ")}` : product.name,
+        price: currentPrice,
+        currency: product.currency,
+        imageUrl: product.imageUrl,
+        // Different picks = a separate cart line (and a separate checkout item).
+        variantId: bundleSelections.length > 0 ? `kit:${bundleSelections.map((b) => b.variantId).join("-")}` : undefined,
+        bundleSelections,
+      };
+    }
     const variantLabel = selectedVariant
       ? [selectedVariant.color, selectedVariant.size].filter(Boolean).join(" / ")
       : null;
@@ -107,6 +145,17 @@ export function AddToCartSection({ product, cashbackLabel }: { product: Product;
       variantId: selectedVariant?.sku,
       exiusVariantId: selectedVariant?.id,
     };
+  }
+
+  // Buy X get Y where Y is another product: Y goes in the cart as a normal
+  // line; checkout takes the discount off it while the shopper qualifies.
+  function handleAddGetProduct(item: OfferGetProduct, qty: number) {
+    if (item.price === null) return;
+    addToCart(
+      { productId: item.productId, slug: item.slug ?? "", name: item.title, price: item.price, currency: product.currency, imageUrl: item.imageUrl ?? "" },
+      qty,
+    );
+    notifyAdded({ type: "cart", name: item.title, imageUrl: item.imageUrl ?? "", price: item.price * qty, currency: product.currency });
   }
 
   function handleAdd() {
@@ -243,6 +292,25 @@ export function AddToCartSection({ product, cashbackLabel }: { product: Product;
         </div>
       )}
 
+      {kit && (
+        <KitPicker
+          kit={kit}
+          currency={product.currency}
+          picks={kitPicks}
+          onPick={(partId, variantId) => setKitPicks((p) => ({ ...p, [partId]: variantId }))}
+        />
+      )}
+
+      <ProductOffers
+        offers={offers}
+        unitPrice={currentPrice}
+        currency={product.currency}
+        quantity={quantity}
+        maxQuantity={maxQuantity}
+        onSetQuantity={(q) => setQuantity(Math.max(1, maxQuantity != null ? Math.min(maxQuantity, q) : q))}
+        onAddGetProduct={handleAddGetProduct}
+      />
+
       {!isAffiliate && (
         <div className={isDigital ? "mt-3" : "mt-5"}>
           <p className="mb-1.5 text-xs font-bold uppercase tracking-wide text-[#8B8880]">Quantity</p>
@@ -266,6 +334,17 @@ export function AddToCartSection({ product, cashbackLabel }: { product: Product;
               <Plus size={16} />
             </button>
           </div>
+          {estimatedSaving > 0 && (
+            <p className="mt-2 text-[13px] font-semibold text-[#4A4844]">
+              {quantity} for{" "}
+              <span className="font-extrabold text-[#16161A]">
+                {formatCurrency(currentPrice * quantity - estimatedSaving, product.currency)}
+              </span>{" "}
+              <span className="text-[#a3a19c] line-through">{formatCurrency(currentPrice * quantity, product.currency)}</span>{" "}
+              <span className="font-bold text-status">— you save {formatCurrency(estimatedSaving, product.currency)}</span>
+            </p>
+          )}
+          {missingKitPick && <p className="mt-2 text-xs font-semibold text-[#B91C1C]">Choose an option for {missingKitPick.name}</p>}
         </div>
       )}
 
@@ -284,7 +363,7 @@ export function AddToCartSection({ product, cashbackLabel }: { product: Product;
           <button
             type="button"
             onClick={handleAdd}
-            disabled={!inStock || (hasVariants && !selectedVariant)}
+            disabled={!inStock || (hasVariants && !selectedVariant) || !!missingKitPick}
             className={`flex w-full max-w-[360px] items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-[#F6C935] to-[#C99200] text-[16px] font-extrabold text-[#16161A] shadow-[0_10px_24px_-8px_rgba(201,146,0,0.55)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none ${
               isDigital ? "h-[50px]" : "h-[58px]"
             }`}
@@ -306,7 +385,7 @@ export function AddToCartSection({ product, cashbackLabel }: { product: Product;
         <button
           type="button"
           onClick={handleBuyNow}
-          disabled={!inStock || (hasVariants && !selectedVariant)}
+          disabled={!inStock || (hasVariants && !selectedVariant) || !!missingKitPick}
           className="mt-2.5 h-[50px] w-full max-w-[360px] rounded-2xl bg-primary text-[16px] font-extrabold text-white shadow-[0_10px_24px_-8px_rgba(27,42,94,0.5)] transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
         >
           Buy Now
