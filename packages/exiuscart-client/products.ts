@@ -167,6 +167,9 @@ interface RawOffer {
   same?: boolean;
   get?: RawOfferGet | RawOfferGet[] | null;
   get_product_ids?: number[];
+  // kind "bundle"
+  percent?: number;
+  items?: { product_id: number; quantity?: number }[];
 }
 
 interface RawSupplierProof {
@@ -269,8 +272,38 @@ function mapOffers(raw: RawOffer[] | undefined): ProductOffer[] {
         },
       ];
     }
+    if (o.kind === "bundle") {
+      const items = (o.items ?? [])
+        .filter((i) => i.product_id)
+        .map((i) => ({ productId: String(i.product_id), quantity: Math.max(1, i.quantity ?? 1), product: null }));
+      const percent = Number(o.percent ?? 0);
+      return items.length > 0 && percent > 0 ? [{ id, kind: "bundle", title, percent, items }] : [];
+    }
     return title ? [{ id, kind: "other", rawKind: o.kind, title }] : [];
   });
+}
+
+// Fills in each bundle offer item's product from the store list, so the
+// product page can show names, images and prices. `self` is the product
+// being viewed (its detail data beats the list's). Offers stay as they
+// are if the list can't be loaded.
+export async function withBundleItemProducts(self: Product): Promise<Product> {
+  const needed = self.offers.some((o) => o.kind === "bundle" && o.items.some((i) => i.productId !== self.id));
+  let byId = new Map<string, Product>();
+  if (needed) {
+    try {
+      byId = new Map((await getProducts()).map((p) => [p.id, p]));
+    } catch {
+      // Logged in getProducts; sets without details are shown as unavailable.
+    }
+  }
+  byId.set(self.id, self);
+  return {
+    ...self,
+    offers: self.offers.map((o) =>
+      o.kind === "bundle" ? { ...o, items: o.items.map((i) => ({ ...i, product: byId.get(i.productId) ?? null })) } : o,
+    ),
+  };
 }
 
 function mapFaq(raw: RawFaq[] | undefined): ProductFaq[] {

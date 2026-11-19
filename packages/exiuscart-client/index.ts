@@ -1,6 +1,6 @@
 export * from "./types";
 export { getCategories } from "./categories";
-export { getProducts, getProduct } from "./products";
+export { getProducts, getProduct, withBundleItemProducts } from "./products";
 export { createCheckout, lookupOrder, previewCart } from "./orders";
 export { signUp, signIn, type AuthResult } from "./auth";
 export {

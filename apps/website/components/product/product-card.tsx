@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ShoppingCart, Check, Gift, Heart, ExternalLink, Package, Tag } from "lucide-react";
-import type { Product, QuantityTier } from "@odtsi/exiuscart-client";
+import type { Product, ProductOffer, QuantityTier } from "@odtsi/exiuscart-client";
 import { Price } from "@/components/shared/price";
 import { addToCart } from "@/lib/cart";
 import { isInWishlist, toggleWishlist } from "@/lib/wishlist";
@@ -34,6 +34,22 @@ interface ProductCardProps {
 
 // Best real multi-buy saving on this product, if any tier is actually
 // cheaper per-unit than buying single units at the base price.
+function offerLabel(offer: ProductOffer): string | null {
+  if (offer.title) return offer.title;
+  switch (offer.kind) {
+    case "quantity_breaks": {
+      const top = offer.tiers[offer.tiers.length - 1];
+      return top ? `Buy ${top.qty}, save ${top.percent}%` : null;
+    }
+    case "bxgy":
+      return `Buy ${offer.buyQty}, get ${offer.getQty} ${offer.getPercent >= 100 ? "free" : `${offer.getPercent}% off`}`;
+    case "bundle":
+      return `Bundle & save ${offer.percent}%`;
+    default:
+      return null;
+  }
+}
+
 function bestTierDeal(product: Product, price: number): { tier: QuantityTier; savings: number } | null {
   let best: { tier: QuantityTier; savings: number } | null = null;
   for (const tier of product.quantityTiers) {
@@ -70,7 +86,8 @@ export function ProductCard({ product, compact, sale, discountBadge }: ProductCa
 
   const router = useRouter();
   // First live offer's title (e.g. "Buy 2, get 1 free"), for the badge.
-  const offerTitle = isAffiliate ? null : (product.offers.find((o) => o.title)?.title ?? null);
+  // Untitled offers get a short label built from the offer itself.
+  const offerTitle = isAffiliate ? null : (product.offers.map(offerLabel).find(Boolean) ?? null);
 
   function handleAdd() {
     // A bundle needs its part options chosen first — that's on its page.

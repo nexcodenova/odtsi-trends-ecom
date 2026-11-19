@@ -1,8 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import { Check, Gift, Package, Plus, Tag } from "lucide-react";
-import type { OfferGetProduct, ProductKit, ProductOffer } from "@odtsi/exiuscart-client";
+import { Check, Gift, Layers, Package, Plus, Tag } from "lucide-react";
+import type { OfferGetProduct, Product, ProductKit, ProductOffer, ProductVariant } from "@odtsi/exiuscart-client";
+import { cheapestVariant, displayPrice } from "@/lib/product-price";
 import { formatCurrency } from "@odtsi/utils";
 
 // Seller offers on the product page. Units are added to the cart at full
@@ -132,6 +133,9 @@ export function ProductOffers({
           );
         }
 
+        // Shown by BundleSavePicker instead.
+        if (offer.kind === "bundle") return null;
+
         if (offer.kind === "bxgy") {
           return (
             <div key={offer.id} className="rounded-xl border-2 border-dashed border-action/60 px-3.5 py-3">
@@ -258,6 +262,192 @@ export function KitPicker({
             </div>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+export type BundleOffer = Extract<ProductOffer, { kind: "bundle" }>;
+
+export interface BundleSelf {
+  id: string;
+  variant: ProductVariant | null;
+  price: number;
+  maxQuantity: number | null;
+}
+
+// The variant used for one item of a set: the page's own pick for the
+// product being viewed, the shopper's pick for another product, else its
+// cheapest in-stock option (the same default the product card shows).
+export function bundleItemVariant(product: Product, picks: Record<string, string>, self: BundleSelf): ProductVariant | null {
+  if (product.id === self.id) return self.variant;
+  return product.variants.find((v) => v.id === picks[product.id]) ?? cheapestVariant(product);
+}
+
+// A set's full price and how many whole sets are in stock. Null when the
+// set can't be bought from this page.
+export function bundleSetInfo(
+  offer: BundleOffer,
+  picks: Record<string, string>,
+  self: BundleSelf,
+): { full: number; maxSets: number | null } | null {
+  let full = 0;
+  let maxSets: number | null = null;
+  for (const item of offer.items) {
+    const p = item.product;
+    if (!p || p.productType === "affiliate" || !p.inStock) return null;
+    // Another bundle product needs its own part picks, made on its page.
+    if (p.id !== self.id && p.kit) return null;
+    const variant = bundleItemVariant(p, picks, self);
+    if (p.id !== self.id && variant && !variant.inStock) return null;
+    const unit = p.id === self.id ? self.price : (variant?.price ?? displayPrice(p));
+    const stock = p.id === self.id ? self.maxQuantity : variant ? variant.stockCount : p.stockCount;
+    if (stock != null) {
+      const sets = Math.floor(stock / item.quantity);
+      if (sets < 1) return null;
+      maxSets = maxSets == null ? sets : Math.min(maxSets, sets);
+    }
+    full += unit * item.quantity;
+  }
+  return { full: Math.round(full * 100) / 100, maxSets };
+}
+
+export function bundleSetPrice(full: number, percent: number): number {
+  return Math.round(full * (1 - percent / 100) * 100) / 100;
+}
+
+// "Bundle & save": just this item first, then each set at its saved price.
+export function BundleSavePicker({
+  offers,
+  self,
+  currency,
+  selectedId,
+  onSelect,
+  picks,
+  onPick,
+}: {
+  offers: BundleOffer[];
+  self: BundleSelf;
+  currency: string;
+  selectedId: string | null;
+  onSelect: (offerId: string | null) => void;
+  picks: Record<string, string>;
+  onPick: (productId: string, variantId: string) => void;
+}) {
+  if (offers.length === 0) return null;
+  const price = (amount: number) => formatCurrency(amount, currency);
+  const cardClass = (selected: boolean) =>
+    `relative flex w-full flex-col gap-2 rounded-xl border-2 px-3.5 py-3 text-left transition ${
+      selected ? "border-action bg-[#FFFBEF]" : "border-black/10 hover:border-black/20"
+    }`;
+  const tick = (
+    <span className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-action">
+      <Check size={11} strokeWidth={3} className="text-[#16161A]" />
+    </span>
+  );
+
+  return (
+    <div className="mt-5">
+      <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-[#8B8880]">
+        <Layers size={13} className="text-status" />
+        Bundle &amp; save
+      </p>
+      <div className="mt-2 flex flex-col gap-2" role="radiogroup" aria-label="Bundle and save">
+        <button
+          type="button"
+          role="radio"
+          aria-checked={selectedId === null}
+          onClick={() => onSelect(null)}
+          className={cardClass(selectedId === null)}
+        >
+          <span className="flex items-center justify-between gap-3">
+            <span className="text-sm font-extrabold text-[#16161A]">Just this item</span>
+            <span className="text-sm font-extrabold text-[#16161A]">{price(self.price)}</span>
+          </span>
+          {selectedId === null && tick}
+        </button>
+
+        {offers.map((offer) => {
+          const info = bundleSetInfo(offer, picks, self);
+          const selected = selectedId === offer.id;
+          const saved = info ? bundleSetPrice(info.full, offer.percent) : 0;
+          return (
+            // A div rather than a button, because a set can hold option selects.
+            <div
+              key={offer.id}
+              role="radio"
+              aria-checked={selected}
+              aria-disabled={!info}
+              tabIndex={info ? 0 : -1}
+              onClick={() => info && onSelect(offer.id)}
+              onKeyDown={(e) => {
+                if (info && (e.key === "Enter" || e.key === " ") && e.target === e.currentTarget) {
+                  e.preventDefault();
+                  onSelect(offer.id);
+                }
+              }}
+              className={`${cardClass(selected)} ${info ? "cursor-pointer" : "cursor-not-allowed opacity-40"}`}
+            >
+              <span className="flex items-start justify-between gap-3">
+                <span className="min-w-0">
+                  <span className="block text-sm font-extrabold text-[#16161A]">
+                    {offer.title || `Bundle & save ${offer.percent}%`}
+                  </span>
+                  <span className="text-xs font-bold text-status">
+                    {info ? `Save ${price(info.full - saved)} (${offer.percent}%)` : "Not available right now"}
+                  </span>
+                </span>
+                {info && (
+                  <span className="shrink-0 text-right">
+                    <span className="block text-sm font-extrabold text-[#16161A]">{price(saved)}</span>
+                    <span className="text-xs text-[#a3a19c] line-through">{price(info.full)}</span>
+                  </span>
+                )}
+              </span>
+              <span className="flex flex-col gap-1.5">
+                {offer.items.map((item) => {
+                  const p = item.product;
+                  const variant = p ? bundleItemVariant(p, picks, self) : null;
+                  const imageUrl = variant?.imageUrl || p?.imageUrl;
+                  return (
+                    <span key={item.productId} className="flex items-center gap-2.5">
+                      <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-primary-light">
+                        {imageUrl && <Image src={imageUrl} alt={p?.name ?? ""} fill sizes="40px" className="object-cover" />}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="line-clamp-1 text-[13px] font-semibold text-[#16161A]">
+                          {item.quantity > 1 && <span className="text-[#8B8880]">{item.quantity}× </span>}
+                          {p?.id === self.id ? "This item" : (p?.name ?? "Unavailable item")}
+                        </span>
+                        {p && p.id !== self.id && p.variants.length > 1 && (
+                          <select
+                            value={variant?.id ?? ""}
+                            onClick={(e) => e.stopPropagation()}
+                            onKeyDown={(e) => e.stopPropagation()}
+                            onChange={(e) => {
+                              onPick(p.id, e.target.value);
+                              onSelect(offer.id);
+                            }}
+                            aria-label={`Option for ${p.name}`}
+                            className="mt-1 h-8 max-w-full rounded-lg border border-black/10 bg-white px-2 text-xs font-semibold text-[#16161A]"
+                          >
+                            {p.variants.map((v) => (
+                              <option key={v.id} value={v.id} disabled={!v.inStock}>
+                                {[v.color, v.size].filter(Boolean).join(" / ") || "Option"}
+                                {v.inStock ? "" : " (sold out)"}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                      </span>
+                    </span>
+                  );
+                })}
+              </span>
+              {selected && tick}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

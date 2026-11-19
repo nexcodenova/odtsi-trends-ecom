@@ -13,7 +13,17 @@ import { cheapestVariant } from "@/lib/product-price";
 import { getSpecIcon } from "@/lib/spec-icons";
 import { trackViewContent } from "@/lib/tracking";
 import { PaymentBadges } from "@/components/checkout/payment-badges";
-import { KitPicker, ProductOffers, offerSaving } from "@/components/product/product-offers";
+import {
+  BundleSavePicker,
+  KitPicker,
+  ProductOffers,
+  bundleItemVariant,
+  bundleSetInfo,
+  bundleSetPrice,
+  offerSaving,
+  type BundleOffer,
+} from "@/components/product/product-offers";
+import { displayPrice } from "@/lib/product-price";
 import { formatCurrency } from "@odtsi/utils";
 
 // Price, stock, color/size picker, quantity, and Add to Cart all live here
@@ -51,6 +61,11 @@ export function AddToCartSection({ product, cashbackLabel }: { product: Product;
   });
   const missingKitPick = kit?.parts.find((p) => p.options.length > 1 && !kitPicks[p.productId]) ?? null;
   const offers = isAffiliate ? [] : product.offers;
+  // Bundle & save: null = just this item, else the picked set's offer id.
+  // At most 8 offers come back, so this list stays short.
+  const bundleOffers = offers.filter((o): o is BundleOffer => o.kind === "bundle");
+  const [bundleId, setBundleId] = useState<string | null>(null);
+  const [bundlePicks, setBundlePicks] = useState<Record<string, string>>({});
 
   const colors = useMemo(() => {
     const seen = new Map<string, ProductVariant>();
@@ -89,8 +104,22 @@ export function AddToCartSection({ product, cashbackLabel }: { product: Product;
 
   const currentPrice = selectedVariant?.price ?? product.price;
   const inStock = kit ? product.inStock && kit.inStock > 0 : selectedVariant ? selectedVariant.inStock : product.inStock;
-  const maxQuantity = kit ? kit.inStock : selectedVariant ? selectedVariant.stockCount : product.stockCount;
-  const estimatedSaving = offerSaving(offers, currentPrice, quantity);
+  const itemMaxQuantity = kit ? kit.inStock : selectedVariant ? selectedVariant.stockCount : product.stockCount;
+  const bundleSelf = { id: product.id, variant: selectedVariant, price: currentPrice, maxQuantity: itemMaxQuantity };
+  const selectedSet = bundleOffers.find((o) => o.id === bundleId) ?? null;
+  const setInfo = selectedSet ? bundleSetInfo(selectedSet, bundlePicks, bundleSelf) : null;
+  // With a set picked, quantity counts whole sets.
+  const activeSet = selectedSet && setInfo ? { offer: selectedSet, ...setInfo } : null;
+  const maxQuantity = activeSet ? activeSet.maxSets : itemMaxQuantity;
+  const unitTotal = activeSet ? activeSet.full : currentPrice;
+  const estimatedSaving = activeSet
+    ? Math.round((activeSet.full - bundleSetPrice(activeSet.full, activeSet.offer.percent)) * quantity * 100) / 100
+    : offerSaving(offers, currentPrice, quantity);
+
+  // Keep quantity within the stock of whatever is picked now.
+  useEffect(() => {
+    if (maxQuantity != null) setQuantity((q) => Math.max(1, Math.min(q, maxQuantity)));
+  }, [maxQuantity]);
   const hasDiscount = product.compareAtPrice !== null && product.compareAtPrice > currentPrice;
   const savings = hasDiscount ? product.compareAtPrice! - currentPrice : 0;
 
@@ -158,7 +187,49 @@ export function AddToCartSection({ product, cashbackLabel }: { product: Product;
     notifyAdded({ type: "cart", name: item.title, imageUrl: item.imageUrl ?? "", price: item.price * qty, currency: product.currency });
   }
 
+  // Every item of the picked set goes in as its own line at full price;
+  // checkout sees the whole set in the cart and takes the saving off.
+  function addSet(set: BundleOffer) {
+    for (const item of set.items) {
+      const p = item.product;
+      if (!p) continue;
+      const qty = item.quantity * quantity;
+      if (p.id === product.id) {
+        addToCart(currentLineItem(), qty);
+        continue;
+      }
+      const variant = bundleItemVariant(p, bundlePicks, bundleSelf);
+      const label = variant ? [variant.color, variant.size].filter(Boolean).join(" / ") : "";
+      addToCart(
+        {
+          productId: p.id,
+          slug: p.slug,
+          name: label ? `${p.name} — ${label}` : p.name,
+          price: variant?.price ?? displayPrice(p),
+          currency: p.currency,
+          imageUrl: variant?.imageUrl || p.imageUrl,
+          variantId: variant?.sku,
+          exiusVariantId: variant?.id,
+        },
+        qty,
+      );
+    }
+  }
+
   function handleAdd() {
+    if (activeSet) {
+      addSet(activeSet.offer);
+      notifyAdded({
+        type: "cart",
+        name: activeSet.offer.title || `${product.name} bundle`,
+        imageUrl: product.imageUrl,
+        price: activeSet.full * quantity,
+        currency: product.currency,
+      });
+      setJustAdded(true);
+      setTimeout(() => setJustAdded(false), 2000);
+      return;
+    }
     const { name, imageUrl } = currentLineItem();
     addToCart(currentLineItem(), quantity);
     notifyAdded({ type: "cart", name, imageUrl, price: currentPrice * quantity, currency: product.currency });
@@ -311,9 +382,19 @@ export function AddToCartSection({ product, cashbackLabel }: { product: Product;
         onAddGetProduct={handleAddGetProduct}
       />
 
+      <BundleSavePicker
+        offers={bundleOffers}
+        self={bundleSelf}
+        currency={product.currency}
+        selectedId={bundleId}
+        onSelect={setBundleId}
+        picks={bundlePicks}
+        onPick={(productId, variantId) => setBundlePicks((p) => ({ ...p, [productId]: variantId }))}
+      />
+
       {!isAffiliate && (
         <div className={isDigital ? "mt-3" : "mt-5"}>
-          <p className="mb-1.5 text-xs font-bold uppercase tracking-wide text-[#8B8880]">Quantity</p>
+          <p className="mb-1.5 text-xs font-bold uppercase tracking-wide text-[#8B8880]">{activeSet ? "Sets" : "Quantity"}</p>
           <div className="flex w-fit items-center rounded-xl border border-black/10">
             <button
               type="button"
@@ -338,9 +419,9 @@ export function AddToCartSection({ product, cashbackLabel }: { product: Product;
             <p className="mt-2 text-[13px] font-semibold text-[#4A4844]">
               {quantity} for{" "}
               <span className="font-extrabold text-[#16161A]">
-                {formatCurrency(currentPrice * quantity - estimatedSaving, product.currency)}
+                {formatCurrency(unitTotal * quantity - estimatedSaving, product.currency)}
               </span>{" "}
-              <span className="text-[#a3a19c] line-through">{formatCurrency(currentPrice * quantity, product.currency)}</span>{" "}
+              <span className="text-[#a3a19c] line-through">{formatCurrency(unitTotal * quantity, product.currency)}</span>{" "}
               <span className="font-bold text-status">— you save {formatCurrency(estimatedSaving, product.currency)}</span>
             </p>
           )}
@@ -381,7 +462,8 @@ export function AddToCartSection({ product, cashbackLabel }: { product: Product;
       {/* Digital only — a second, direct-to-checkout path below Add to
           Cart. Skips the cart page since a digital purchase is usually a
           single-item decision. */}
-      {isDigital && (
+      {/* Buy Now checks out a single line, so it's hidden while a set is picked. */}
+      {isDigital && !activeSet && (
         <button
           type="button"
           onClick={handleBuyNow}

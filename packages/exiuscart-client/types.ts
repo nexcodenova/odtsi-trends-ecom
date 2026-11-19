@@ -78,8 +78,21 @@ export type ProductOffer =
       get: OfferGetProduct[];
       getProductIds: string[];
     }
+  // A set of products sold together at percent off ("Bundle & save"). A
+  // product can be in several. Picking one adds every item to the cart at
+  // full price; checkout takes the saving off itself.
+  | { id: string; kind: "bundle"; title: string; percent: number; items: OfferBundleItem[] }
   // Any other kind (e.g. a free gift) — shown by title only.
   | { id: string; kind: "other"; rawKind: string; title: string };
+
+// One product in a bundle offer. ExiusCart sends only product_id + quantity;
+// `product` is filled in from the store's product list on the product page
+// (null on cards, or when the product isn't listed).
+export interface OfferBundleItem {
+  productId: string;
+  quantity: number;
+  product: Product | null;
+}
 
 export interface QuantityTier {
   quantity: number;

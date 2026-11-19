@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowRight, Mail, Truck } from "lucide-react";
-import { getProduct, getReviews, type Product, type ProductReview } from "@odtsi/exiuscart-client";
+import { getProduct, getReviews, withBundleItemProducts, type Product, type ProductReview } from "@odtsi/exiuscart-client";
 import { ProductGallery } from "@/components/product/product-gallery";
 import { AddToCartSection } from "@/components/product/add-to-cart-section";
 import { BestSellerBadge } from "@/components/product/best-seller-badge";
@@ -120,6 +120,8 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     notFound();
   }
 
+  // Bundle & save sets need the other items' names, images and prices.
+  const purchaseProduct = await withBundleItemProducts(product);
   const isAffiliate = product.productType === "affiliate";
   const isDigital = product.productType === "digital";
   const price = displayPrice(product);
@@ -240,7 +242,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           {supplierProof && <SupplierSellingPoints points={supplierProof.sellingPoints} />}
 
           <div className={`mt-4 ${isDigital ? "flex flex-1 flex-col" : ""}`}>
-            <AddToCartSection product={product} cashbackLabel={cashbackLabel} />
+            <AddToCartSection product={purchaseProduct} cashbackLabel={cashbackLabel} />
           </div>
 
           {/* Seller's shipping journey as an arrow flow, falling back to
