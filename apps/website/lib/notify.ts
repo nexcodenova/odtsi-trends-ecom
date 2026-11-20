@@ -34,3 +34,14 @@ export function notifyVariantImage(detail: VariantImageDetail) {
 }
 
 export { VARIANT_IMAGE_EVENT };
+
+// The other direction: the shopper tapped a gallery photo. When that photo
+// belongs to a color, the picker selects that color so the two never
+// disagree about what is being bought.
+const GALLERY_IMAGE_EVENT = "odtsi-gallery-image";
+
+export function notifyGalleryImage(detail: VariantImageDetail) {
+  window.dispatchEvent(new CustomEvent(GALLERY_IMAGE_EVENT, { detail }));
+}
+
+export { GALLERY_IMAGE_EVENT };

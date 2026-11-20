@@ -62,12 +62,18 @@ export interface OfferGetProduct {
   slug: string | null;
 }
 
+// How the seller wants an offer drawn, set per offer in ExiusCart (the
+// same choice its admin preview shows). Not in the public docs yet; any
+// value we don't know comes through as "list".
+export type OfferStyle = "list" | "cards" | "photos" | "pills" | "bold";
+
 export type ProductOffer =
-  | { id: string; kind: "quantity_breaks"; title: string; tiers: OfferTier[] }
+  | { id: string; kind: "quantity_breaks"; title: string; style: OfferStyle; tiers: OfferTier[] }
   | {
       id: string;
       kind: "bxgy";
       title: string;
+      style: OfferStyle;
       buyQty: number;
       getQty: number;
       getPercent: number;
@@ -81,7 +87,7 @@ export type ProductOffer =
   // A set of products sold together at percent off ("Bundle & save"). A
   // product can be in several. Picking one adds every item to the cart at
   // full price; checkout takes the saving off itself.
-  | { id: string; kind: "bundle"; title: string; percent: number; items: OfferBundleItem[] }
+  | { id: string; kind: "bundle"; title: string; style: OfferStyle; percent: number; items: OfferBundleItem[] }
   // Any other kind (e.g. a free gift) — shown by title only.
   | { id: string; kind: "other"; rawKind: string; title: string };
 
@@ -158,6 +164,8 @@ export interface ProductVariant {
   inStock: boolean;
   // Each variant has its own real price and image — different sizes of the
   // same product are frequently priced differently (e.g. 2XL/3XL upcharges).
+  // ExiusCart sends null when a variant has no price of its own; the mapper
+  // fills in the product price then, so this is always a number here.
   price: number;
   imageUrl: string;
 }
@@ -189,6 +197,8 @@ export interface Product {
   categorySlug: string;
   inStock: boolean;
   stockCount: number | null;
+  // Seller ticked "free shipping" on this product.
+  freeShipping: boolean;
   // True for a bundle product (also sent on the list endpoint, for badges).
   isBundle: boolean;
   // The bundle's parts — product detail only, null otherwise.

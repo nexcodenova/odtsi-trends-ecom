@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { ChevronDown } from "lucide-react";
 import { ImageLens } from "@/components/product/image-lens";
-import { VARIANT_IMAGE_EVENT, type VariantImageDetail } from "@/lib/notify";
+import { VARIANT_IMAGE_EVENT, notifyGalleryImage, type VariantImageDetail } from "@/lib/notify";
 
 interface ProductGalleryProps {
   images: string[];
@@ -14,6 +14,9 @@ interface ProductGalleryProps {
   // product's gallery gets — caps the whole gallery to a smaller max width
   // instead of stretching to fill the column.
   compact?: boolean;
+  // The photo of the variant the picker starts on, so the first paint
+  // already matches the selected color instead of the product's cover.
+  initialImage?: string;
 }
 
 // How many thumbnails the side rail holds before it'd run taller than the
@@ -21,16 +24,18 @@ interface ProductGalleryProps {
 // below the main image instead of stretching the rail further down.
 const MAX_RAIL_THUMBS = 6;
 
-export function ProductGallery({ images, productName, badge, compact }: ProductGalleryProps) {
-  const [active, setActive] = useState(0);
+export function ProductGallery({ images, productName, badge, compact, initialImage }: ProductGalleryProps) {
+  const initialIndex = initialImage ? Math.max(0, images.indexOf(initialImage)) : 0;
+  const [active, setActive] = useState(initialIndex);
   // Which page of the rail is showing — the rail only ever displays
   // MAX_RAIL_THUMBS at once, side-by-side never spilling into a row below
   // the main image. The chevron button pages through the rest in chunks,
   // wrapping back to the start after the last page.
-  const [railPage, setRailPage] = useState(0);
+  const [railPage, setRailPage] = useState(Math.floor(initialIndex / MAX_RAIL_THUMBS));
   // Set when a color/size variant is picked in AddToCartSection (a sibling,
-  // not a parent/child, so this arrives via event rather than a prop) —
-  // takes over the main display until the shopper clicks a thumbnail again.
+  // not a parent/child, so this arrives via event rather than a prop).
+  // Variant photos are normally in `images` already, so this only takes
+  // over the main display for one that isn't.
   const [variantImage, setVariantImage] = useState<string | null>(null);
   const activeImage = variantImage ?? images[active] ?? images[0];
   const hasMoreThanRail = images.length > MAX_RAIL_THUMBS;
@@ -44,15 +49,27 @@ export function ProductGallery({ images, productName, badge, compact }: ProductG
 
   useEffect(() => {
     function handle(e: Event) {
-      setVariantImage((e as CustomEvent<VariantImageDetail>).detail.imageUrl);
+      const url = (e as CustomEvent<VariantImageDetail>).detail.imageUrl;
+      if (!url) return;
+      const i = images.indexOf(url);
+      if (i === -1) {
+        setVariantImage(url);
+        return;
+      }
+      // Highlight its thumbnail and page the rail to it.
+      setActive(i);
+      setVariantImage(null);
+      setRailPage(Math.floor(i / MAX_RAIL_THUMBS));
     }
     window.addEventListener(VARIANT_IMAGE_EVENT, handle);
     return () => window.removeEventListener(VARIANT_IMAGE_EVENT, handle);
-  }, []);
+  }, [images]);
 
   function selectThumb(i: number) {
     setActive(i);
     setVariantImage(null);
+    const src = images[i];
+    if (src) notifyGalleryImage({ imageUrl: src });
   }
 
   function renderThumb(src: string, i: number) {

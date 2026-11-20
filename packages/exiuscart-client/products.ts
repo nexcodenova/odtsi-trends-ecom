@@ -6,6 +6,7 @@ import type {
   Product,
   ProductFaq,
   ProductKit,
+  OfferStyle,
   ProductOffer,
   ProductSpec,
   ProductType,
@@ -45,8 +46,9 @@ interface RawVariant {
   sku: string;
   quantity: number;
   in_stock: boolean;
-  price: number;
-  image_url: string;
+  // null when the variant has no price of its own (seen live 2026-11-20).
+  price: number | null;
+  image_url: string | null;
 }
 
 interface RawVideo {
@@ -121,6 +123,8 @@ interface RawProduct {
   is_bundle?: boolean;
   kit?: RawKit | null;
   offers?: RawOffer[];
+  // Seen live on the detail endpoint 2026-11-20 (not in the docs yet).
+  free_shipping?: boolean;
 }
 
 interface RawKitOption {
@@ -160,6 +164,8 @@ interface RawOffer {
   id: number;
   kind: string;
   title?: string | null;
+  // Seen live 2026-11-20 on the detail endpoint: "photos". Not in the docs.
+  style?: string | null;
   tiers?: { qty: number; percent: number }[];
   buy_qty?: number;
   get_qty?: number;
@@ -167,9 +173,39 @@ interface RawOffer {
   same?: boolean;
   get?: RawOfferGet | RawOfferGet[] | null;
   get_product_ids?: number[];
-  // kind "bundle"
+  // kind "bundle". The list sends { product_id, quantity }; the detail
+  // endpoint (per the developer docs) sends { self: true, quantity } for the
+  // product being viewed and { id, title, image, price, slug, quantity } for
+  // the others. All three are accepted.
   percent?: number;
-  items?: { product_id: number; quantity?: number }[];
+  items?: RawBundleItem[];
+}
+
+interface RawBundleItem {
+  self?: boolean;
+  product_id?: number;
+  id?: number;
+  quantity?: number;
+}
+
+const OFFER_STYLES: readonly OfferStyle[] = ["list", "cards", "photos", "pills", "bold"];
+
+function offerStyle(raw: string | null | undefined): OfferStyle {
+  const s = (raw ?? "").trim().toLowerCase();
+  return (OFFER_STYLES as readonly string[]).includes(s) ? (s as OfferStyle) : "list";
+}
+
+function bxgyLabel(buyQty: number, getQty: number, percent: number) {
+  return `Buy ${buyQty}, get ${percent >= 100 ? `${getQty} free` : `${getQty} at ${percent}% off`}`;
+}
+
+// A seller title that names different numbers than the offer's own rule
+// (e.g. "Buy 2, get 1 free" on a buy-3-get-2 offer, seen live 2026-11-20)
+// would promise shoppers the wrong deal, so the rule wins over the title.
+function bxgyTitle(title: string, buyQty: number, getQty: number, percent: number) {
+  const m = title.match(/buy\s*(\d+)\D+?(\d+)/i);
+  if (m && (Number(m[1]) !== buyQty || Number(m[2]) !== getQty)) return bxgyLabel(buyQty, getQty, percent);
+  return title || bxgyLabel(buyQty, getQty, percent);
 }
 
 interface RawSupplierProof {
@@ -247,25 +283,28 @@ function mapOfferGet(raw: RawOffer["get"]): OfferGetProduct[] {
   }));
 }
 
-function mapOffers(raw: RawOffer[] | undefined): ProductOffer[] {
+function mapOffers(raw: RawOffer[] | undefined, selfId: string): ProductOffer[] {
   return (raw ?? []).flatMap((o): ProductOffer[] => {
     const id = String(o.id);
     const title = o.title?.trim() || "";
+    const style = offerStyle(o.style);
     if (o.kind === "quantity_breaks") {
       const tiers = (o.tiers ?? []).filter((t) => t.qty > 0 && t.percent > 0).sort((a, b) => a.qty - b.qty);
-      return tiers.length > 0 ? [{ id, kind: "quantity_breaks", title, tiers }] : [];
+      return tiers.length > 0 ? [{ id, kind: "quantity_breaks", title, style, tiers }] : [];
     }
     if (o.kind === "bxgy") {
       if (!o.buy_qty || !o.get_qty) return [];
       const get = mapOfferGet(o.get);
+      const getPercent = o.get_percent ?? 100;
       return [
         {
           id,
           kind: "bxgy",
-          title,
+          title: bxgyTitle(title, o.buy_qty, o.get_qty, getPercent),
+          style,
           buyQty: o.buy_qty,
           getQty: o.get_qty,
-          getPercent: o.get_percent ?? 100,
+          getPercent,
           same: o.same ?? get.length === 0,
           get,
           getProductIds: (o.get_product_ids ?? get.map((g) => Number(g.productId))).map(String),
@@ -273,11 +312,12 @@ function mapOffers(raw: RawOffer[] | undefined): ProductOffer[] {
       ];
     }
     if (o.kind === "bundle") {
-      const items = (o.items ?? [])
-        .filter((i) => i.product_id)
-        .map((i) => ({ productId: String(i.product_id), quantity: Math.max(1, i.quantity ?? 1), product: null }));
+      const items = (o.items ?? []).flatMap((i) => {
+        const productId = i.self ? selfId : (i.product_id ?? i.id);
+        return productId ? [{ productId: String(productId), quantity: Math.max(1, i.quantity ?? 1), product: null }] : [];
+      });
       const percent = Number(o.percent ?? 0);
-      return items.length > 0 && percent > 0 ? [{ id, kind: "bundle", title, percent, items }] : [];
+      return items.length > 0 && percent > 0 ? [{ id, kind: "bundle", title, style, percent, items }] : [];
     }
     return title ? [{ id, kind: "other", rawKind: o.kind, title }] : [];
   });
@@ -314,7 +354,7 @@ function mapHighlights(raw: RawHighlight[] | undefined): ProductSpec[] {
   return (raw ?? []).map((h) => ({ icon: h.icon, label: h.label }));
 }
 
-function mapVariants(raw: RawVariant[] | undefined): ProductVariant[] {
+function mapVariants(raw: RawVariant[] | undefined, productPrice: number): ProductVariant[] {
   return (raw ?? []).map((v) => ({
     id: String(v.id),
     size: v.size,
@@ -323,8 +363,8 @@ function mapVariants(raw: RawVariant[] | undefined): ProductVariant[] {
     sku: v.sku,
     stockCount: v.quantity,
     inStock: v.in_stock,
-    price: v.price,
-    imageUrl: v.image_url,
+    price: v.price ?? productPrice,
+    imageUrl: v.image_url ?? "",
   }));
 }
 
@@ -385,9 +425,10 @@ function mapProduct(raw: RawProduct, categorySlugById: Map<string, string>): Pro
         : "uncategorized"),
     inStock: raw.in_stock,
     stockCount: raw.quantity,
+    freeShipping: raw.free_shipping ?? false,
     isBundle: raw.is_bundle ?? !!raw.kit,
     kit: mapKit(raw.kit),
-    offers: mapOffers(raw.offers),
+    offers: mapOffers(raw.offers, String(raw.id)),
     quantityTiers: mapQuantityTiers(raw.quantity_tiers),
     // Real fields now, confirmed live 2026-09-03 — null/0 until a product
     // actually has reviews, never a fabricated number.
@@ -399,7 +440,7 @@ function mapProduct(raw: RawProduct, categorySlugById: Map<string, string>): Pro
     // sent the field at all, so "0" is never confused with "not available".
     viewCount: raw.view_count ?? null,
     unitsSold: raw.units_sold ?? null,
-    variants: mapVariants(raw.variants),
+    variants: mapVariants(raw.variants, raw.price),
     productType: raw.product_type ?? "physical",
     affiliateUrl: raw.affiliate_url ?? null,
     affiliateCtaText: raw.affiliate_cta_text ?? null,

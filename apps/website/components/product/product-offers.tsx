@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { Check, Gift, Layers, Package, Plus, Tag } from "lucide-react";
-import type { OfferGetProduct, Product, ProductKit, ProductOffer, ProductVariant } from "@odtsi/exiuscart-client";
+import type { OfferGetProduct, OfferStyle, Product, ProductKit, ProductOffer, ProductVariant } from "@odtsi/exiuscart-client";
 import { cheapestVariant, displayPrice } from "@/lib/product-price";
 import { formatCurrency } from "@odtsi/utils";
 
@@ -30,8 +30,211 @@ function rewardLabel(getQty: number, percent: number) {
   return percent >= 100 ? `${getQty} free` : `${getQty} at ${percent}% off`;
 }
 
+// One way to buy this item: a quantity and what it costs then.
+interface Deal {
+  qty: number;
+  title: string;
+  note: string;
+  total: number;
+  full: number;
+}
+
+type QuantityOffer = Extract<ProductOffer, { kind: "quantity_breaks" }> | Extract<ProductOffer, { kind: "bxgy" }>;
+
+function isQuantityOffer(o: ProductOffer): o is QuantityOffer {
+  return o.kind === "quantity_breaks" || (o.kind === "bxgy" && o.same);
+}
+
+// "1 item" first, then every quantity the offers price, keeping the
+// cheapest version of each quantity.
+function buildDeals(offers: QuantityOffer[], unitPrice: number): Deal[] {
+  const byQty = new Map<number, Deal>();
+  const add = (d: Deal) => {
+    const prev = byQty.get(d.qty);
+    if (!prev || d.total < prev.total) byQty.set(d.qty, d);
+  };
+  add({ qty: 1, title: "1 item", note: "Standard price", total: unitPrice, full: unitPrice });
+  for (const offer of offers) {
+    if (offer.kind === "quantity_breaks") {
+      for (const t of offer.tiers) {
+        const full = unitPrice * t.qty;
+        add({ qty: t.qty, title: `Buy ${t.qty}`, note: `Save ${t.percent}%`, total: full * (1 - t.percent / 100), full });
+      }
+    } else {
+      const qty = offer.buyQty + offer.getQty;
+      const full = unitPrice * qty;
+      const total = unitPrice * offer.buyQty + unitPrice * offer.getQty * (1 - offer.getPercent / 100);
+      add({
+        qty,
+        title: offer.title || `Buy ${offer.buyQty}, get ${rewardLabel(offer.getQty, offer.getPercent)}`,
+        note: `${qty} items${offer.getPercent >= 100 ? `, you pay for ${offer.buyQty}` : ""}`,
+        total,
+        full,
+      });
+    }
+  }
+  return [...byQty.values()].sort((a, b) => a.qty - b.qty);
+}
+
+// The offers that set a quantity, drawn the way the seller picked in
+// ExiusCart (photos / cards / pills / bold / list) as one choice list.
+function DealPicker({
+  offers,
+  imageUrl,
+  unitPrice,
+  currency,
+  quantity,
+  maxQuantity,
+  onSetQuantity,
+}: {
+  offers: QuantityOffer[];
+  imageUrl: string;
+  unitPrice: number;
+  currency: string;
+  quantity: number;
+  maxQuantity: number | null;
+  onSetQuantity: (quantity: number) => void;
+}) {
+  const deals = buildDeals(offers, unitPrice);
+  if (deals.length < 2) return null;
+  const style: OfferStyle = offers[0]?.style ?? "list";
+  const price = (amount: number) => formatCurrency(Math.round(amount * 100) / 100, currency);
+  const saving = (d: Deal) => (d.full > 0 ? 1 - d.total / d.full : 0);
+  const best = deals.reduce<Deal | null>((b, d) => (saving(d) > 0.001 && (!b || saving(d) > saving(b)) ? d : b), null);
+  const only = offers.length === 1 ? offers[0] : undefined;
+  const heading = only?.kind === "quantity_breaks" && only.title ? only.title : "Buy more, save more";
+
+  const bestBadge = (
+    <span className="absolute -top-2.5 right-3 rounded-full bg-[#16161A] px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-white">
+      Best deal
+    </span>
+  );
+
+  const items = deals.map((d) => {
+    const selected = quantity === d.qty;
+    const disabled = maxQuantity != null && d.qty > maxQuantity;
+    const discounted = d.total < d.full - 0.005;
+    const common = {
+      type: "button" as const,
+      role: "radio" as const,
+      "aria-checked": selected,
+      disabled,
+      onClick: () => onSetQuantity(d.qty),
+    };
+
+    if (style === "pills") {
+      return (
+        <button
+          key={d.qty}
+          {...common}
+          className={`relative flex items-center gap-1.5 rounded-full border-2 px-3.5 py-2 text-xs font-bold transition disabled:cursor-not-allowed disabled:opacity-40 ${
+            selected ? "border-action bg-[#FFFBEF] text-[#16161A]" : "border-black/10 text-[#4A4844] hover:border-black/20"
+          }`}
+        >
+          {d.title}
+          <span aria-hidden className="text-[#a3a19c]">·</span>
+          <span className="font-extrabold text-[#16161A]">{price(d.total)}</span>
+        </button>
+      );
+    }
+
+    // cards, and photos (cards with the product photo on top).
+    if (style === "cards" || style === "photos") {
+      const photos = style === "photos";
+      return (
+        <button
+          key={d.qty}
+          {...common}
+          className={`relative flex flex-col items-center gap-0.5 rounded-xl border-2 text-center transition disabled:cursor-not-allowed disabled:opacity-40 ${
+            photos ? "p-1.5 pb-2.5" : "px-2 pb-2.5 pt-3.5"
+          } ${selected ? "border-action bg-[#FFFBEF]" : "border-black/10 hover:border-black/20"}`}
+        >
+          {best === d && bestBadge}
+          {photos && (
+            <span className="relative mb-1.5 block aspect-square w-full overflow-hidden rounded-lg bg-primary-light">
+              {imageUrl && <Image src={imageUrl} alt="" fill sizes="(max-width: 640px) 33vw, 160px" className="object-cover" />}
+              {d.qty > 1 && (
+                <span className="absolute bottom-1 right-1 rounded-md bg-[#16161A]/85 px-1.5 text-[10px] font-extrabold text-white">
+                  ×{d.qty}
+                </span>
+              )}
+            </span>
+          )}
+          <span className="text-[13px] font-extrabold leading-tight text-[#16161A]">{d.title}</span>
+          <span className="text-[11px] text-[#716D67]">{d.note}</span>
+          <span className="mt-1 text-sm font-extrabold text-[#16161A]">{price(d.total)}</span>
+          {discounted && <span className="text-[11px] text-[#a3a19c] line-through">{price(d.full)}</span>}
+        </button>
+      );
+    }
+
+    // bold and list: one row per choice.
+    const bold = style === "bold";
+    return (
+      <button
+        key={d.qty}
+        {...common}
+        className={`relative flex items-center gap-3 rounded-xl border-2 px-3 text-left transition disabled:cursor-not-allowed disabled:opacity-40 ${
+          bold ? "py-4" : "py-2.5"
+        } ${
+          selected
+            ? bold
+              ? "border-action bg-action/15"
+              : "border-action bg-[#FFFBEF]"
+            : bold
+              ? "border-action/40 bg-[#FFFBEF] hover:border-action"
+              : "border-black/10 hover:border-black/20"
+        }`}
+      >
+        {best === d && bestBadge}
+        <span
+          className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border-2 ${
+            selected ? "border-action bg-action" : "border-black/20"
+          }`}
+        >
+          {selected && <Check size={10} strokeWidth={3.5} className="text-[#16161A]" />}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className={`block font-extrabold text-[#16161A] ${bold ? "text-base" : "text-sm"}`}>{d.title}</span>
+          <span className={`${bold ? "text-[13px]" : "text-xs"} ${discounted ? "font-bold text-status" : "text-[#716D67]"}`}>
+            {discounted ? `${d.note} · save ${price(d.full - d.total)}` : d.note}
+          </span>
+        </span>
+        <span className="shrink-0 text-right">
+          <span className={`block font-extrabold text-[#16161A] ${bold ? "text-base" : "text-sm"}`}>{price(d.total)}</span>
+          {discounted && <span className="text-xs text-[#a3a19c] line-through">{price(d.full)}</span>}
+        </span>
+      </button>
+    );
+  });
+
+  return (
+    <div>
+      <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-[#8B8880]">
+        <Tag size={13} className="text-status" />
+        {heading}
+      </p>
+      <div
+        role="radiogroup"
+        aria-label={heading}
+        className={`mt-2.5 ${
+          style === "pills"
+            ? "flex flex-wrap gap-2"
+            : style === "cards" || style === "photos"
+              ?`grid gap-2 ${deals.length >= 3 ? "grid-cols-3" : "grid-cols-2"}`
+              : "flex flex-col gap-2.5"
+        }`}
+      >
+        {items}
+      </div>
+      <p className="mt-1.5 text-[11px] text-[#8B8880]">Mix colors and sizes. The saving comes off at checkout.</p>
+    </div>
+  );
+}
+
 export function ProductOffers({
   offers,
+  imageUrl,
   unitPrice,
   currency,
   quantity,
@@ -40,6 +243,8 @@ export function ProductOffers({
   onAddGetProduct,
 }: {
   offers: ProductOffer[];
+  // The selected variant's photo, for the "photos" style.
+  imageUrl: string;
   unitPrice: number;
   currency: string;
   quantity: number;
@@ -47,92 +252,25 @@ export function ProductOffers({
   onSetQuantity: (quantity: number) => void;
   onAddGetProduct: (product: OfferGetProduct, quantity: number) => void;
 }) {
-  if (offers.length === 0) return null;
+  const quantityOffers = offers.filter(isQuantityOffer);
+  const rest: ProductOffer[] = offers.filter((o) => !isQuantityOffer(o) && o.kind !== "bundle");
+  if (quantityOffers.length === 0 && rest.length === 0) return null;
   const price = (amount: number) => formatCurrency(amount, currency);
-  const fits = (qty: number) => maxQuantity == null || qty <= maxQuantity;
 
   return (
     <div className="mt-5 flex flex-col gap-3">
-      {offers.map((offer) => {
-        if (offer.kind === "quantity_breaks") {
-          const activeQty = [...offer.tiers].reverse().find((t) => quantity >= t.qty)?.qty;
-          return (
-            <div key={offer.id}>
-              <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-[#8B8880]">
-                <Tag size={13} className="text-status" />
-                {offer.title || "Buy more, save more"}
-              </p>
-              <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {offer.tiers.map((tier) => {
-                  const full = unitPrice * tier.qty;
-                  const selected = activeQty === tier.qty;
-                  const available = fits(tier.qty);
-                  return (
-                    <button
-                      key={tier.qty}
-                      type="button"
-                      disabled={!available}
-                      onClick={() => onSetQuantity(tier.qty)}
-                      aria-pressed={selected}
-                      className={`relative flex items-center justify-between gap-3 rounded-xl border-2 px-3.5 py-3 text-left transition disabled:cursor-not-allowed disabled:opacity-40 ${
-                        selected ? "border-action bg-[#FFFBEF]" : "border-black/10 hover:border-black/20"
-                      }`}
-                    >
-                      <span>
-                        <span className="block text-sm font-extrabold text-[#16161A]">Buy {tier.qty}</span>
-                        <span className="text-xs font-bold text-status">Save {tier.percent}%</span>
-                      </span>
-                      <span className="text-right">
-                        <span className="block text-sm font-extrabold text-[#16161A]">
-                          {price(full * (1 - tier.percent / 100))}
-                        </span>
-                        <span className="text-xs text-[#a3a19c] line-through">{price(full)}</span>
-                      </span>
-                      {selected && (
-                        <span className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-action">
-                          <Check size={11} strokeWidth={3} className="text-[#16161A]" />
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        }
-
-        if (offer.kind === "bxgy" && offer.same) {
-          const groupQty = offer.buyQty + offer.getQty;
-          const selected = quantity >= groupQty;
-          return (
-            <button
-              key={offer.id}
-              type="button"
-              disabled={!fits(groupQty)}
-              onClick={() => onSetQuantity(Math.max(groupQty, Math.ceil(quantity / groupQty) * groupQty))}
-              aria-pressed={selected}
-              className={`flex items-center gap-3 rounded-xl border-2 px-3.5 py-3 text-left transition disabled:cursor-not-allowed disabled:opacity-40 ${
-                selected ? "border-action bg-[#FFFBEF]" : "border-dashed border-action/60 hover:bg-[#FFFBEF]"
-              }`}
-            >
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-action/15 text-[#8A6400]">
-                <Gift size={17} />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-sm font-extrabold text-[#16161A]">
-                  {offer.title || `Buy ${offer.buyQty}, get ${rewardLabel(offer.getQty, offer.getPercent)}`}
-                </span>
-                <span className="text-xs text-[#716D67]">
-                  {selected
-                    ? "Applied at checkout"
-                    : `Tap to set quantity to ${groupQty} — you pay for ${offer.buyQty}${offer.getPercent < 100 ? " + the discount" : ""}`}
-                </span>
-              </span>
-              {selected && <Check size={18} className="shrink-0 text-status" />}
-            </button>
-          );
-        }
-
+      {quantityOffers.length > 0 && (
+        <DealPicker
+          offers={quantityOffers}
+          imageUrl={imageUrl}
+          unitPrice={unitPrice}
+          currency={currency}
+          quantity={quantity}
+          maxQuantity={maxQuantity}
+          onSetQuantity={onSetQuantity}
+        />
+      )}
+      {rest.map((offer) => {
         // Shown by BundleSavePicker instead.
         if (offer.kind === "bundle") return null;
 

@@ -2,11 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { Minus, Plus, Check, ExternalLink, CheckCircle2, ShoppingCart } from "lucide-react";
 import { trackStorefrontEvent, type OfferGetProduct, type Product, type ProductVariant } from "@odtsi/exiuscart-client";
 import { addToCart } from "@/lib/cart";
 import { setBuyNowItem } from "@/lib/buy-now";
-import { notifyAdded, notifyVariantImage } from "@/lib/notify";
+import { GALLERY_IMAGE_EVENT, notifyAdded, notifyVariantImage, type VariantImageDetail } from "@/lib/notify";
 import { WishlistButton } from "@/components/product/wishlist-button";
 import { Price } from "@/components/shared/price";
 import { cheapestVariant } from "@/lib/product-price";
@@ -94,6 +95,21 @@ export function AddToCartSection({ product, cashbackLabel }: { product: Product;
     const next = sameSize ?? product.variants.find((v) => v.color === color);
     if (next) selectVariant(next);
   }
+
+  // A gallery photo that belongs to one color selects that color (keeping
+  // the size when it can). Photos shared by every color change nothing.
+  useEffect(() => {
+    function handle(e: Event) {
+      const url = (e as CustomEvent<VariantImageDetail>).detail.imageUrl;
+      if (!url || selectedVariant?.imageUrl === url) return;
+      const match = product.variants.find((v) => v.color && v.imageUrl === url);
+      if (!match?.color) return;
+      const sameSize = product.variants.find((v) => v.color === match.color && v.size === selectedVariant?.size);
+      setSelectedVariant(sameSize ?? match);
+    }
+    window.addEventListener(GALLERY_IMAGE_EVENT, handle);
+    return () => window.removeEventListener(GALLERY_IMAGE_EVENT, handle);
+  }, [product.variants, selectedVariant]);
 
   function selectSize(size: string) {
     const next =
@@ -276,6 +292,7 @@ export function AddToCartSection({ product, cashbackLabel }: { product: Product;
             : inStock
               ? "In Stock — Order Now Before It's Gone"
               : "Out of Stock"}
+          {!isDigital && inStock && product.freeShipping && <span className="text-[#4A4844]"> · Free shipping</span>}
         </p>
       )}
 
@@ -324,11 +341,19 @@ export function AddToCartSection({ product, cashbackLabel }: { product: Product;
                         : "border-black/10 text-[#4A4844] hover:border-black/20"
                     }`}
                   >
-                    {v.colorHex && (
+                    {v.colorHex ? (
                       <span
                         className="h-4 w-4 flex-shrink-0 rounded-full border border-black/10"
                         style={{ backgroundColor: v.colorHex }}
                       />
+                    ) : (
+                      // No hex from the seller: the color's own photo is
+                      // the clearest swatch there is.
+                      v.imageUrl && (
+                        <span className="relative -ml-1.5 h-7 w-7 flex-shrink-0 overflow-hidden rounded-lg bg-primary-light">
+                          <Image src={v.imageUrl} alt="" fill sizes="28px" className="object-cover" />
+                        </span>
+                      )
                     )}
                     {v.color}
                   </button>
@@ -374,6 +399,7 @@ export function AddToCartSection({ product, cashbackLabel }: { product: Product;
 
       <ProductOffers
         offers={offers}
+        imageUrl={selectedVariant?.imageUrl || product.imageUrl}
         unitPrice={currentPrice}
         currency={product.currency}
         quantity={quantity}

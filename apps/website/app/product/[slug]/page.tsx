@@ -20,7 +20,7 @@ import { DigitalProductTabs } from "@/components/product/digital-product-tabs";
 import { SupplierProofLine, SupplierSellingPoints, hasSupplierStats } from "@/components/product/supplier-proof";
 import { parseProductDescription } from "@/lib/parse-product-description";
 import { getWalletCashbackLabel } from "@/lib/wallet-rate";
-import { displayPrice } from "@/lib/product-price";
+import { cheapestVariant, displayPrice } from "@/lib/product-price";
 import { MIN_VIEWS_FOR_POPULAR } from "@/lib/product-thresholds";
 import { JsonLd, breadcrumbJsonLd } from "@/components/seo/json-ld";
 import { SITE_URL, pageAlternates } from "@/lib/site";
@@ -126,7 +126,12 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   const isDigital = product.productType === "digital";
   const price = displayPrice(product);
   const hasDiscount = product.compareAtPrice !== null && product.compareAtPrice > price;
-  const galleryImages = product.images.length > 0 ? product.images : product.imageUrl ? [product.imageUrl] : [];
+  const productImages = product.images.length > 0 ? product.images : product.imageUrl ? [product.imageUrl] : [];
+  // Each color's own photo joins the gallery after the product photos, so
+  // picking a color shows its photo with a thumbnail, and the gallery opens
+  // on the photo of the color the picker starts on.
+  const galleryImages = [...new Set([...productImages, ...product.variants.map((v) => v.imageUrl).filter(Boolean)])];
+  const initialImage = isAffiliate ? undefined : cheapestVariant(product)?.imageUrl || undefined;
   const discountBadge = hasDiscount
     ? `-${Math.round((1 - price / product.compareAtPrice!) * 100)}% Today`
     : undefined;
@@ -184,6 +189,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           <div className="relative">
             <ProductGallery
               images={galleryImages}
+              initialImage={initialImage}
               productName={product.name}
               badge={discountBadge}
               compact={isDigital}
